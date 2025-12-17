@@ -1,0 +1,437 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <title>DeGen Energy Terminal - Mark1 (API)</title>
+  <style>
+    :root { color-scheme: dark; }
+    body{ margin:0; font-family: ui-sans-serif, system-ui, -apple-system, Segoe UI, Roboto, Helvetica, Arial; background:#070b18; color:#e8ecff; }
+    .wrap{ max-width:1200px; margin:18px auto; padding:0 14px 22px; }
+    .card{ background: rgba(255,255,255,0.06); border: 1px solid rgba(255,255,255,0.10); border-radius: 16px; padding: 14px; box-shadow: 0 14px 34px rgba(0,0,0,0.35); }
+    .top{ display:flex; gap:12px; align-items:flex-start; justify-content:space-between; flex-wrap:wrap; margin-bottom:12px; }
+    h1{ margin:0; font-size:16px; letter-spacing:.2px; opacity:.95; }
+    .kpis{ display:flex; gap:10px; flex-wrap:wrap; align-items:stretch; }
+    .kpi{ background: rgba(255,255,255,0.05); border: 1px solid rgba(255,255,255,0.08); border-radius: 12px; padding: 10px 12px; min-width: 170px; }
+    .label{ font-size:12px; opacity:.72; }
+    .value{ margin-top:6px; font-size:20px; font-weight:750; }
+    .sub{ margin-top:6px; font-size:12px; opacity:.72; }
+    .mono{ font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", monospace; }
+
+    .grid{ display:grid; grid-template-columns: 1fr 1fr; gap: 12px; margin-top: 12px; }
+    @media (max-width: 980px){ .grid{ grid-template-columns:1fr; } }
+
+    .panel{ background: rgba(0,0,0,0.22); border: 1px solid rgba(255,255,255,0.08); border-radius: 14px; padding: 10px; }
+    .panelTitle{ display:flex; align-items:center; justify-content:space-between; font-size:12px; opacity:.78; margin-bottom:8px; }
+    canvas{ width:100%; height:260px; display:block; border-radius:12px; }
+
+    .bottom{ display:grid; grid-template-columns: 1.3fr 0.7fr; gap:12px; margin-top: 12px; }
+    @media (max-width: 980px){ .bottom{ grid-template-columns:1fr; } }
+
+    .controls{ display:grid; gap:10px; }
+    .row{ display:grid; grid-template-columns:1fr 1fr; gap:10px; }
+    .field{ background: rgba(255,255,255,0.05); border: 1px solid rgba(255,255,255,0.08); border-radius: 12px; padding: 10px; }
+    .field label{ display:block; font-size:12px; opacity:.72; margin-bottom:6px; }
+    input, select, button{
+      width:100%; font-size:14px; padding:10px; border-radius:10px; border: 1px solid rgba(255,255,255,0.15);
+      background: rgba(10,14,30,0.75); color:#e8ecff; outline:none;
+    }
+    button{ cursor:pointer; font-weight:750; background:#18265f; border:1px solid rgba(255,255,255,0.18); }
+    button:hover{ filter:brightness(1.08); }
+
+    .tape{ height: 232px; overflow:hidden; border-radius: 12px; border:1px solid rgba(255,255,255,0.08); background: rgba(0,0,0,0.24); padding: 8px; }
+    .tline{ font-size:12px; line-height:1.45; opacity:.9; display:flex; justify-content:space-between; gap:12px; font-family: ui-monospace, Menlo, Consolas, monospace; }
+    .tleft{ white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
+    .tright{ opacity:.75; white-space:nowrap; }
+    .green{ color: rgba(80,220,140,0.95); }
+    .red{ color: rgba(255,90,110,0.92); }
+    .hint{ font-size:12px; opacity:.72; line-height:1.35; }
+    .bar{ height:10px; border-radius:999px; background: rgba(255,255,255,0.10); overflow:hidden; border:1px solid rgba(255,255,255,0.10); margin-top: 8px; }
+    .bar > div{ height:100%; width:0%; background: rgba(120,160,255,0.85); }
+  </style>
+</head>
+<body>
+<div class="wrap">
+  <div class="card">
+    <div class="top">
+      <div>
+        <h1>DeGen Energy Terminal - Mark1 (API)</h1>
+        <div class="hint">Frontend polls an API for state. Simulation lives server-side.</div>
+      </div>
+
+      <div class="kpis">
+        <div class="kpi">
+          <div class="label">Simulated Time</div>
+          <div class="value mono" id="timeTxt">00:00:00</div>
+          <div class="sub">24h loop</div>
+        </div>
+        <div class="kpi">
+          <div class="label">Active Plugged Vehicles</div>
+          <div class="value mono" id="vehTxt">0</div>
+          <div class="sub mono" id="arrTxt">Arrivals/min: 0.00</div>
+        </div>
+        <div class="kpi">
+          <div class="label">Instant Power</div>
+          <div class="value mono" id="pwrTxt">0.00 kW</div>
+          <div class="sub mono" id="pwrSub">0 W</div>
+        </div>
+        <div class="kpi">
+          <div class="label">Energy Consumed</div>
+          <div class="value mono" id="engTxt">0.00 kWh</div>
+          <div class="sub mono" id="tgtTxt">Target: 1500.00 kWh</div>
+          <div class="bar"><div id="prog"></div></div>
+        </div>
+      </div>
+    </div>
+
+    <div class="grid">
+      <div class="panel">
+        <div class="panelTitle"><span>Total Power (kW)</span><span class="mono" id="lastPrice">last: 0.00</span></div>
+        <canvas id="cPower"></canvas>
+      </div>
+      <div class="panel">
+        <div class="panelTitle"><span>Active Vehicles</span><span class="mono" id="lastOI">last: 0</span></div>
+        <canvas id="cOI"></canvas>
+      </div>
+      <div class="panel">
+        <div class="panelTitle"><span>Correlation: Vehicles vs kW</span><span class="mono" id="corrTxt">ρ: 0.00</span></div>
+        <canvas id="cCorr"></canvas>
+      </div>
+      <div class="panel">
+        <div class="panelTitle"><span>Top Sessions (kW)</span><span class="mono" id="topTxt">top: 0.00</span></div>
+        <canvas id="cTop"></canvas>
+      </div>
+    </div>
+
+    <div class="bottom">
+      <div class="controls">
+        <div class="row">
+          <div class="field">
+            <label>API Base URL</label>
+            <input id="apiBase" value="http://localhost:8000" />
+            <div class="hint">Change this if you deploy the API.</div>
+          </div>
+          <div class="field">
+            <label>Display</label>
+            <select id="unitMode">
+              <option value="kw" selected>kW (and W)</option>
+              <option value="w">W only</option>
+            </select>
+            <div class="hint">Charts are in kW.</div>
+          </div>
+        </div>
+
+        <div class="row">
+          <div class="field">
+            <label>Poll interval</label>
+            <select id="pollMs">
+              <option value="100">100 ms</option>
+              <option value="200" selected>200 ms</option>
+              <option value="500">500 ms</option>
+              <option value="1000">1000 ms</option>
+            </select>
+            <div class="hint">Frontend refresh speed.</div>
+          </div>
+          <div class="field">
+            <label>Quick actions</label>
+            <div class="row" style="grid-template-columns:1fr 1fr; margin-top:6px;">
+              <button id="restart">Restart day</button>
+              <button id="pause">Pause</button>
+            </div>
+          </div>
+        </div>
+
+        <div class="hint">To change simulation settings, POST to /api/config in the backend (or ask me and I’ll add UI controls here).</div>
+      </div>
+
+      <div class="panel">
+        <div class="panelTitle"><span>Live tape</span><span class="mono" id="tapeHead">events</span></div>
+        <div class="tape" id="tape"></div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<script>
+  const clamp = (x,a,b)=>Math.max(a,Math.min(b,x));
+
+  // DOM
+  const timeTxt = document.getElementById("timeTxt");
+  const vehTxt  = document.getElementById("vehTxt");
+  const arrTxt  = document.getElementById("arrTxt");
+  const pwrTxt  = document.getElementById("pwrTxt");
+  const pwrSub  = document.getElementById("pwrSub");
+  const engTxt  = document.getElementById("engTxt");
+  const tgtTxt  = document.getElementById("tgtTxt");
+  const prog    = document.getElementById("prog");
+
+  const lastPrice = document.getElementById("lastPrice");
+  const lastOI = document.getElementById("lastOI");
+  const corrTxt = document.getElementById("corrTxt");
+  const topTxt = document.getElementById("topTxt");
+
+  const apiBaseEl = document.getElementById("apiBase");
+  const unitModeEl = document.getElementById("unitMode");
+  const pollMsEl = document.getElementById("pollMs");
+  const restartBtn = document.getElementById("restart");
+  const pauseBtn = document.getElementById("pause");
+  const tapeEl = document.getElementById("tape");
+
+  // canvases
+  const cPower = document.getElementById("cPower");
+  const cOI = document.getElementById("cOI");
+  const cCorr = document.getElementById("cCorr");
+  const cTop = document.getElementById("cTop");
+  const ctxP = cPower.getContext("2d");
+  const ctxO = cOI.getContext("2d");
+  const ctxC = cCorr.getContext("2d");
+  const ctxT = cTop.getContext("2d");
+
+  // theme comes from API meta.theme
+  let THEME = null;
+
+  function fitCanvas(canvas){
+    const dpr = window.devicePixelRatio || 1;
+    const rect = canvas.getBoundingClientRect();
+    const w = Math.floor(rect.width * dpr);
+    const h = Math.floor(rect.height * dpr);
+    if (canvas.width !== w || canvas.height !== h){ canvas.width = w; canvas.height = h; }
+    return { w, h, dpr };
+  }
+
+  function drawLineChart(ctx, canvas, ys, labelRight, palette){
+    const { w, h, dpr } = fitCanvas(canvas);
+    ctx.clearRect(0,0,w,h);
+
+    const padL = 42*dpr, padR = 12*dpr, padT = 10*dpr, padB = 18*dpr;
+    const cw = w - padL - padR, ch = h - padT - padB;
+    if (!ys || ys.length < 2) return;
+
+    let ymin = Infinity, ymax = -Infinity;
+    for (const v of ys){ ymin=Math.min(ymin,v); ymax=Math.max(ymax,v); }
+    const pad = (ymax-ymin)*0.12 || 1;
+    ymin -= pad; ymax += pad;
+
+    const yTo = (v)=> padT + (1 - (v-ymin)/(ymax-ymin)) * ch;
+    const xTo = (i)=> padL + (i/Math.max(1, ys.length-1)) * cw;
+
+    // grid
+    ctx.save();
+    ctx.strokeStyle = THEME.bgGrid;
+    ctx.lineWidth = 1;
+    for(let i=1;i<=5;i++){
+      const y = padT + (i/6)*ch;
+      ctx.beginPath(); ctx.moveTo(padL,y); ctx.lineTo(padL+cw,y); ctx.stroke();
+    }
+    for(let i=1;i<=8;i++){
+      const x = padL + (i/9)*cw;
+      ctx.beginPath(); ctx.moveTo(x,padT); ctx.lineTo(x,padT+ch); ctx.stroke();
+    }
+    ctx.restore();
+
+    // line
+    ctx.save();
+    ctx.strokeStyle = palette.line;
+    ctx.lineWidth = 2*dpr;
+    ctx.beginPath();
+    for(let i=0;i<ys.length;i++){
+      const x=xTo(i), y=yTo(ys[i]);
+      if(i===0) ctx.moveTo(x,y); else ctx.lineTo(x,y);
+    }
+    ctx.stroke();
+
+    // last marker and dash
+    const ly = yTo(ys[ys.length-1]);
+    ctx.fillStyle = "rgba(255,255,255,0.92)";
+    ctx.beginPath(); ctx.arc(padL+cw, ly, 3.5*dpr, 0, Math.PI*2); ctx.fill();
+
+    ctx.strokeStyle = palette.dash;
+    ctx.setLineDash([6*dpr,6*dpr]);
+    ctx.beginPath(); ctx.moveTo(padL, ly); ctx.lineTo(padL+cw, ly); ctx.stroke();
+    ctx.setLineDash([]);
+    ctx.restore();
+
+    ctx.save();
+    ctx.fillStyle = THEME.text;
+    ctx.font = `${12*dpr}px ui-monospace, Menlo, Consolas, monospace`;
+    ctx.fillText(labelRight, padL, 12*dpr);
+    ctx.restore();
+  }
+
+  function drawScatter(ctx, canvas, xs, ys, rho){
+    const { w, h, dpr } = fitCanvas(canvas);
+    ctx.clearRect(0,0,w,h);
+
+    const pad = 14*dpr;
+    const cw = w - 2*pad, ch = h - 2*pad;
+    if (!xs || xs.length < 2) return;
+
+    let xmin = Math.min(...xs), xmax = Math.max(...xs);
+    let ymin = Math.min(...ys), ymax = Math.max(...ys);
+    xmin = Math.floor(xmin); xmax = Math.ceil(xmax);
+    const ypad = (ymax-ymin)*0.12 || 1;
+    ymin -= ypad; ymax += ypad;
+
+    const xTo = (v)=> pad + ((v-xmin)/Math.max(1e-6,(xmax-xmin))) * cw;
+    const yTo = (v)=> pad + (1 - (v-ymin)/Math.max(1e-6,(ymax-ymin))) * ch;
+
+    ctx.save();
+    ctx.strokeStyle=THEME.bgGrid; ctx.lineWidth=1;
+    for(let i=1;i<=6;i++){
+      const x = pad + (i/7)*cw;
+      ctx.beginPath(); ctx.moveTo(x,pad); ctx.lineTo(x,pad+ch); ctx.stroke();
+      const y = pad + (i/7)*ch;
+      ctx.beginPath(); ctx.moveTo(pad,y); ctx.lineTo(pad+cw,y); ctx.stroke();
+    }
+    ctx.restore();
+
+    ctx.save();
+    for(let i=0;i<xs.length;i++){
+      const a = (i+1)/xs.length;
+      ctx.fillStyle = `rgba(185, 120, 255, ${0.06 + 0.70*a})`;
+      ctx.beginPath(); ctx.arc(xTo(xs[i]), yTo(ys[i]), (2.5 + 2.0*a)*dpr, 0, Math.PI*2); ctx.fill();
+    }
+    const lx = xTo(xs[xs.length-1]);
+    const ly = yTo(ys[ys.length-1]);
+    ctx.fillStyle="rgba(255,255,255,0.92)";
+    ctx.beginPath(); ctx.arc(lx, ly, 3.8*dpr, 0, Math.PI*2); ctx.fill();
+    ctx.restore();
+
+    ctx.save();
+    ctx.fillStyle=THEME.text;
+    ctx.font = `${12*dpr}px ui-monospace, Menlo, Consolas, monospace`;
+    ctx.fillText(`ρ ${Number(rho).toFixed(2)}`, pad, 14*dpr);
+    ctx.restore();
+  }
+
+  function drawTopBars(ctx, canvas, top){
+    const { w, h, dpr } = fitCanvas(canvas);
+    ctx.clearRect(0,0,w,h);
+
+    const pad = 14*dpr;
+    const cw = w - 2*pad, ch = h - 2*pad;
+    if (!top || !top.length) return;
+
+    const vals = top.map(x=>x.p);
+    const max = Math.max(...vals, 1e-6);
+    const n = top.length;
+    const gap = 6*dpr;
+    const bw = (cw - gap*(n-1)) / n;
+
+    ctx.save();
+    ctx.strokeStyle=THEME.bgGrid; ctx.lineWidth=1;
+    for(let i=1;i<=5;i++){
+      const y = pad + (i/6)*ch;
+      ctx.beginPath(); ctx.moveTo(pad,y); ctx.lineTo(pad+cw,y); ctx.stroke();
+    }
+    ctx.restore();
+
+    for(let i=0;i<n;i++){
+      const x = pad + i*(bw+gap);
+      const v = top[i].p;
+      const bh = (v/max)*ch;
+      const y = pad + (ch - bh);
+
+      ctx.save();
+      ctx.fillStyle = THEME.topBarFill;
+      ctx.strokeStyle = THEME.topBarStroke;
+      ctx.lineWidth = 1*dpr;
+      ctx.beginPath(); ctx.rect(x, y, bw, bh); ctx.fill(); ctx.stroke();
+      ctx.fillStyle = THEME.text;
+      ctx.font = `${11*dpr}px ui-monospace, Menlo, Consolas, monospace`;
+      ctx.fillText(v.toFixed(1), x, y - 4*dpr);
+      ctx.restore();
+    }
+  }
+
+  function renderTape(tape){
+    tapeEl.innerHTML = (tape || []).map(x=>{
+      const cls = x.kind === "in" ? "green" : "red";
+      return `<div class="tline ${cls}">
+        <div class="tleft">${x.msg}</div>
+        <div class="tright">${x.t}</div>
+      </div>`;
+    }).join("");
+  }
+
+  async function post(path, body){
+    const base = apiBaseEl.value.trim().replace(/\/$/, "");
+    const res = await fetch(base + path, {
+      method: "POST",
+      headers: { "Content-Type":"application/json" },
+      body: body === undefined ? undefined : JSON.stringify(body)
+    });
+    if (!res.ok) throw new Error(`POST ${path} failed`);
+    return res.json();
+  }
+
+  let pollTimer = null;
+  let paused = false;
+
+  async function poll(){
+    const base = apiBaseEl.value.trim().replace(/\/$/, "");
+    const res = await fetch(base + "/api/state");
+    const data = await res.json();
+
+    THEME = data.meta?.theme || THEME;
+    const now = data.now;
+    const series = data.series;
+
+    timeTxt.textContent = now.simTime;
+    vehTxt.textContent = String(now.activeVehicles);
+    arrTxt.textContent = `Arrivals/min: ${Number(now.arrivalsPerMin).toFixed(2)}`;
+
+    const mode = unitModeEl.value;
+    if (mode === "w"){
+      pwrTxt.textContent = `${Math.round(now.totalKW*1000)} W`;
+      pwrSub.textContent = `${Number(now.totalKW).toFixed(2)} kW`;
+    } else {
+      pwrTxt.textContent = `${Number(now.totalKW).toFixed(2)} kW`;
+      pwrSub.textContent = `${Math.round(now.totalKW*1000)} W`;
+    }
+
+    engTxt.textContent = `${Number(now.energyKWh).toFixed(2)} kWh`;
+    tgtTxt.textContent = `Target: ${Number(now.targetKWh).toFixed(2)} kWh`;
+    const pct = clamp((now.energyKWh / now.targetKWh) * 100, 0, 100);
+    prog.style.width = `${pct}%`;
+
+    lastPrice.textContent = `last: ${Number(now.totalKW).toFixed(2)}`;
+    lastOI.textContent = `last: ${now.activeVehicles}`;
+    corrTxt.textContent = `ρ: ${Number(now.corr).toFixed(2)}`;
+
+    const top = data.top || [];
+    topTxt.textContent = `top: ${(top[0]?.p || 0).toFixed(2)}`;
+
+    drawLineChart(ctxP, cPower, series.pkw, "kW", { line: THEME.powerLine, dash: THEME.powerDash });
+    drawLineChart(ctxO, cOI, series.oi,  "vehicles", { line: THEME.oiLine, dash: THEME.oiDash });
+
+    const xs = (series.oi || []).slice(-220);
+    const ys = (series.pkw || []).slice(-220);
+    drawScatter(ctxC, cCorr, xs, ys, now.corr);
+    drawTopBars(ctxT, cTop, top);
+
+    renderTape(data.tape);
+  }
+
+  function startPolling(){
+    if (pollTimer) clearInterval(pollTimer);
+    pollTimer = setInterval(()=>poll().catch(()=>{}), Number(pollMsEl.value));
+  }
+
+  restartBtn.addEventListener("click", ()=>post("/api/restart").catch(()=>{}));
+  pauseBtn.addEventListener("click", async ()=>{
+    paused = !paused;
+    pauseBtn.textContent = paused ? "Resume" : "Pause";
+    await post("/api/pause", paused);
+  });
+
+  pollMsEl.addEventListener("change", startPolling);
+  unitModeEl.addEventListener("change", ()=>poll().catch(()=>{}));
+  window.addEventListener("resize", ()=>poll().catch(()=>{}));
+
+  // start
+  startPolling();
+  poll().catch(()=>{});
+</script>
+</body>
+</html>

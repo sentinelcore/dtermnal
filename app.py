@@ -219,21 +219,31 @@ class Engine:
         self.series_oi = []
         self.tape = []
         self.arrivalNudge = 1.0
+        self.last_ts = time.time()  # reset real-time anchor
         self._recompute_arrival_scale()
+
 
     def step(self):
         if self.paused:
             return
 
-        mult = max(0.05, float(self.cfg.simMinPerStep))
+        # use real elapsed time to advance sim
+        now_ts = time.time()
+        dt_sec = now_ts - self.last_ts
+        if dt_sec <= 0:
+            return
+        self.last_ts = now_ts
+
+        dt_min = dt_sec / 60.0  # real minutes passed
         cap = max(1, int(self.cfg.capacity))
         mode = self.cfg.mode
 
         t01 = (self.simMin % DAY_MIN) / DAY_MIN
         self._update_arrival_nudge()
 
-        lam = self._base_arrival_rate_per_min(mode, t01) * self.arrivalScale * self.arrivalNudge * mult
-        if mode == "degen" and random.random() < 0.05 * mult:
+        # arrival rate is per-minute, scale by dt_min
+        lam = self._base_arrival_rate_per_min(mode, t01) * self.arrivalScale * self.arrivalNudge * dt_min
+        if mode == "degen" and random.random() < 0.05 * dt_min:
             lam *= rand(1.6, 2.8)
 
         arrivals = self._sample_poisson(lam)
@@ -246,7 +256,8 @@ class Engine:
             self._push_tape("in", f"+ Plugged: #{s.id} {s.vtype.upper()} @ {s.peakKW:.0f}kW")
 
         totalKW = sum(self._power_at(s, self.simMin) for s in self.sessions)
-        self.energyKWh += totalKW * (mult / 60.0)
+        # kW * hours = kWh; dt_min / 60 gives hours
+        self.energyKWh += totalKW * (dt_min / 60.0)
 
         kept = []
         for s in self.sessions:
@@ -257,7 +268,8 @@ class Engine:
                 kept.append(s)
         self.sessions = kept
 
-        self.simMin += mult
+        # advance simulated minutes by real minutes elapsed
+        self.simMin += dt_min
         self.simSec = int(self.simMin * 60)
 
         if self.simMin >= DAY_MIN:
@@ -272,6 +284,7 @@ class Engine:
             self.series_t.pop(0)
             self.series_pkw.pop(0)
             self.series_oi.pop(0)
+
 
     def snapshot(self) -> Dict[str, Any]:
         totalKW = sum(self._power_at(s, self.simMin) for s in self.sessions)
@@ -357,7 +370,9 @@ def _run_loop():
     while True:
         with engine.lock:
             engine.step()
-            hz = max(1.0, float(engine.cfg.engineHz))
-        time.sleep(1.0 / hz)
+        # how often we recompute; doesn't affect sim speed now,
+        # because sim speed is tied to real time
+        time.sleep(0.5)
+
 
 threading.Thread(target=_run_loop, daemon=True).start()

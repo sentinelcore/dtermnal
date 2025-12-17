@@ -309,11 +309,7 @@ class Engine:
 engine = Engine()
 
 
-origins = [
-    "https://resplendent-kheer-6da5ff.netlify.app",  # your Netlify site
-    "http://localhost:3000",  # optional, for local dev
-    "http://localhost:5173",  # optional, for local dev
-]
+origins = ["*"]
 
 app = FastAPI(title="DeGen Energy Terminal API", version="1.0")
 
@@ -321,8 +317,8 @@ app.add_middleware(
     CORSMiddleware,
     allow_origins=origins,
     allow_credentials=True,
-    allow_methods=["*"],   # GET, POST, etc.
-    allow_headers=["*"],   # Authorization, Content-Type, etc.
+    allow_methods=["*"],
+    allow_headers=["*"],
 )
 
 

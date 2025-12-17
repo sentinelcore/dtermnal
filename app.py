@@ -6,18 +6,20 @@ import random
 import threading
 from dataclasses import dataclass
 from typing import Dict, List, Any
+import os
+import json
 
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 from pydantic import BaseModel
-from fastapi.middleware.cors import CORSMiddleware
+import redis
 
-import os
-import json
-
-
+# -----------------------
+# Global sim constants
+# -----------------------
 
 DAY_MIN = 1440
+# tuned for ~19 MWh/day with current session mix
 TARGET_SESSIONS_PER_DAY = 6800
 
 VEHICLE_TYPES = [
@@ -38,9 +40,9 @@ THEME = {
     "text": "rgba(255,255,255,0.78)",
 }
 
-# ---------- Redis: fast shared state store ----------
-
-import redis
+# -----------------------
+# Redis: shared snapshot
+# -----------------------
 
 REDIS_URL = os.getenv("REDIS_URL", "redis://localhost:6379/0")
 redis_client = redis.Redis.from_url(REDIS_URL)
@@ -50,8 +52,10 @@ SNAPSHOT_KEY = "degen:mark1:snapshot"
 def clamp(x: float, a: float, b: float) -> float:
     return max(a, min(b, x))
 
+
 def rand(a: float, b: float) -> float:
     return a + random.random() * (b - a)
+
 
 def fmt_time(seconds: int) -> str:
     seconds = max(0, int(seconds))
@@ -59,6 +63,7 @@ def fmt_time(seconds: int) -> str:
     m = (seconds // 60) % 60
     s = seconds % 60
     return f"{h:02d}:{m:02d}:{s:02d}"
+
 
 def corr(xs: List[float], ys: List[float]) -> float:
     n = min(len(xs), len(ys))
@@ -78,6 +83,7 @@ def corr(xs: List[float], ys: List[float]) -> float:
     den = math.sqrt(dx * dy) or 1.0
     return clamp(num / den, -1.0, 1.0)
 
+
 @dataclass
 class Session:
     id: int
@@ -89,20 +95,21 @@ class Session:
     holdMin: float
     taperMin: float
 
+
 class Config(BaseModel):
-    targetMWh: float = 19
+    # target 19 MWh / day
+    targetMWh: float = 19.0
     mode: str = "office"
     capacity: int = 1000
-    simMinPerStep: float = 1.0
-    engineHz: float = 5.0
+    # fixed simulated minutes per engine step
+    simMinPerStep: float = 0.25   # 15 seconds of sim time per step
+    engineHz: float = 4.0         # 4 steps/sec => 60x realtime (fine for a dashboard)
+
 
 class Engine:
     def __init__(self):
         self.lock = threading.Lock()
         self.cfg = Config()
-
-        # real-time tracking (sim time derived from wall clock)
-        self.last_ts = time.time()
 
         self.paused = False
         self.simMin = 0.0
@@ -145,9 +152,8 @@ class Engine:
             day = math.exp(-((t01 - 0.55) / 0.16) ** 2)
             base = 0.05 + 0.26 * day
 
+        # overall scaling to make things lively
         return base * 4.0
-
-
 
     def _recompute_arrival_scale(self):
         mode = self.cfg.mode
@@ -157,8 +163,8 @@ class Engine:
             t01 = i / (samples - 1)
             s += self._base_arrival_rate_per_min(mode, t01)
         avg = s / samples
-        self.arrivalScale = TARGET_SESSIONS_PER_DAY / max(1e-6, (avg * 1440))
-        self.arrivalScale = clamp(self.arrivalScale, 0.25, 5.0)
+        self.arrivalScale = TARGET_SESSIONS_PER_DAY / max(1e-6, (avg * DAY_MIN))
+        self.arrivalScale = clamp(self.arrivalScale, 0.25, 10.0)
 
     def _sample_poisson(self, lam: float) -> int:
         L = math.exp(-lam)
@@ -224,8 +230,8 @@ class Engine:
         elapsedFrac = clamp(self.simMin / DAY_MIN, 0.0, 1.0)
         expectedSoFar = targetKWh * elapsedFrac
         err = expectedSoFar - self.energyKWh
-        self.arrivalNudge = clamp(1.0 + (err / max(1.0, targetKWh)) * 8.0, 0.50, 4.0)
-
+        # more aggressive feedback but bounded
+        self.arrivalNudge = clamp(1.0 + (err / max(1.0, targetKWh)) * 4.0, 0.5, 3.5)
 
     def restart(self):
         self.simMin = 0.0
@@ -238,39 +244,27 @@ class Engine:
         self.series_oi = []
         self.tape = []
         self.arrivalNudge = 1.0
-        self.last_ts = time.time()  # reset real-time anchor
         self._recompute_arrival_scale()
-
 
     def step(self):
         if self.paused:
             return
 
-        # use real elapsed time to advance sim, but clamp big hiccups
-        now_ts = time.time()
-        raw_dt = now_ts - self.last_ts
-        if raw_dt <= 0:
-            return
-
-        # at most 1.0 sec per tick, at least 0.05 sec to avoid tiny noise
-        dt_sec = clamp(raw_dt, 0.05, 1.0)
-        self.last_ts = now_ts
-
-        dt_min = dt_sec / 60.0  # real minutes passed (smoothed)
+        # fixed sim step -> no jitter
+        mult = max(0.05, float(self.cfg.simMinPerStep))  # minutes per tick
         cap = max(1, int(self.cfg.capacity))
         mode = self.cfg.mode
 
         t01 = (self.simMin % DAY_MIN) / DAY_MIN
         self._update_arrival_nudge()
 
-        # arrival rate is per-minute, scale by dt_min
         lam = (
             self._base_arrival_rate_per_min(mode, t01)
             * self.arrivalScale
             * self.arrivalNudge
-            * dt_min
+            * mult
         )
-        if mode == "degen" and random.random() < 0.05 * dt_min:
+        if mode == "degen" and random.random() < 0.05 * mult:
             lam *= rand(1.6, 2.8)
 
         arrivals = self._sample_poisson(lam)
@@ -283,10 +277,10 @@ class Engine:
             self._push_tape("in", f"+ Plugged: #{s.id} {s.vtype.upper()} @ {s.peakKW:.0f}kW")
 
         totalKW = sum(self._power_at(s, self.simMin) for s in self.sessions)
-        # kW * hours = kWh; dt_min / 60 gives hours
-        self.energyKWh += totalKW * (dt_min / 60.0)
+        # kW * hours = kWh; mult / 60 is hours
+        self.energyKWh += totalKW * (mult / 60.0)
 
-        kept = []
+        kept: List[Session] = []
         for s in self.sessions:
             done = (self.simMin - s.startMin) >= s.durMin
             if done:
@@ -295,8 +289,7 @@ class Engine:
                 kept.append(s)
         self.sessions = kept
 
-        # advance simulated minutes by (smoothed) real minutes elapsed
-        self.simMin += dt_min
+        self.simMin += mult
         self.simSec = int(self.simMin * 60)
 
         if self.simMin >= DAY_MIN:
@@ -312,11 +305,12 @@ class Engine:
             self.series_pkw.pop(0)
             self.series_oi.pop(0)
 
-
-
     def snapshot(self) -> Dict[str, Any]:
         totalKW = sum(self._power_at(s, self.simMin) for s in self.sessions)
-        powers = [{"id": s.id, "vtype": s.vtype, "p": self._power_at(s, self.simMin)} for s in self.sessions]
+        powers = [
+            {"id": s.id, "vtype": s.vtype, "p": self._power_at(s, self.simMin)}
+            for s in self.sessions
+        ]
         powers.sort(key=lambda x: x["p"], reverse=True)
         top = powers[:10]
 
@@ -326,7 +320,7 @@ class Engine:
 
         targetKWh = max(0.1, self.cfg.targetMWh) * 1000.0
         return {
-            "meta": { "mark": "Mark1", "theme": THEME },
+            "meta": {"mark": "Mark1", "theme": THEME},
             "config": self.cfg.model_dump(),
             "now": {
                 "simMin": self.simMin,
@@ -337,8 +331,10 @@ class Engine:
                 "energyKWh": self.energyKWh,
                 "targetKWh": targetKWh,
                 "arrivalsPerMin": self._base_arrival_rate_per_min(
-                    self.cfg.mode, (self.simMin % DAY_MIN)/DAY_MIN
-                ) * self.arrivalScale * self.arrivalNudge,
+                    self.cfg.mode, (self.simMin % DAY_MIN) / DAY_MIN
+                )
+                * self.arrivalScale
+                * self.arrivalNudge,
                 "corr": rho,
             },
             "series": {
@@ -350,18 +346,21 @@ class Engine:
             "tape": self.tape,
         }
 
+
 engine = Engine()
 
+
 def save_snapshot_to_store():
-    # called from the background thread
     try:
         snap = engine.snapshot()
         redis_client.set(SNAPSHOT_KEY, json.dumps(snap))
     except Exception as e:
-        # optional: log instead of crashing the loop
         print("Redis save error:", e)
 
 
+# -----------------------
+# FastAPI app + CORS
+# -----------------------
 
 origins = ["*"]
 
@@ -380,6 +379,7 @@ app.add_middleware(
 def health():
     return {"ok": True, "mark": "Mark1"}
 
+
 @app.get("/api/state")
 def api_state():
     # try Redis first
@@ -390,10 +390,9 @@ def api_state():
     except Exception as e:
         print("Redis read error:", e)
 
-    # fallback to in-memory snapshot so API still works
+    # fallback to in-memory snapshot
     with engine.lock:
         return engine.snapshot()
-
 
 
 @app.post("/api/config")
@@ -403,11 +402,13 @@ def api_config(cfg: Config):
         engine._recompute_arrival_scale()
         return {"ok": True, "config": engine.cfg.model_dump()}
 
+
 @app.post("/api/restart")
 def api_restart():
     with engine.lock:
         engine.restart()
         return {"ok": True}
+
 
 @app.post("/api/pause")
 def api_pause(pause: bool):
@@ -415,11 +416,14 @@ def api_pause(pause: bool):
         engine.paused = pause
         return {"ok": True, "paused": engine.paused}
 
+
 def _run_loop():
     while True:
         with engine.lock:
             engine.step()
             save_snapshot_to_store()
-        time.sleep(0.5)
+            hz = max(1.0, float(engine.cfg.engineHz))
+        time.sleep(1.0 / hz)
+
 
 threading.Thread(target=_run_loop, daemon=True).start()

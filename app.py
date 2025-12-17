@@ -18,7 +18,7 @@ import json
 
 
 DAY_MIN = 1440
-TARGET_SESSIONS_PER_DAY = 700
+TARGET_SESSIONS_PER_DAY = 6800
 
 VEHICLE_TYPES = [
     {"type": "car", "peakKW": 40.0, "baseDurMin": 90.0, "prob": 0.01},
@@ -92,7 +92,7 @@ class Session:
 class Config(BaseModel):
     targetMWh: float = 19
     mode: str = "office"
-    capacity: int = 32
+    capacity: int = 1000
     simMinPerStep: float = 1.0
     engineHz: float = 5.0
 
@@ -142,7 +142,8 @@ class Engine:
             day = math.exp(-((t01 - 0.55) / 0.16) ** 2)
             return 0.10 + 0.22 * day + 0.10 * max(0.0, math.sin(twoPi * (t01 * 3.7)))
         day = math.exp(-((t01 - 0.55) / 0.16) ** 2)
-        return 0.05 + 0.26 * day
+        return (0.05 + 0.26 * day) * 4.0
+
 
     def _recompute_arrival_scale(self):
         mode = self.cfg.mode
@@ -219,7 +220,8 @@ class Engine:
         elapsedFrac = clamp(self.simMin / DAY_MIN, 0.0, 1.0)
         expectedSoFar = targetKWh * elapsedFrac
         err = expectedSoFar - self.energyKWh
-        self.arrivalNudge = clamp(1.0 + (err / max(1.0, targetKWh)) * 1.8, 0.55, 1.65)
+        self.arrivalNudge = clamp(1.0 + (err / max(1.0, targetKWh)) * 8.0, 0.50, 4.0)
+
 
     def restart(self):
         self.simMin = 0.0

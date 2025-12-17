@@ -4,20 +4,16 @@ import time
 import math
 import random
 import threading
-from dataclasses import dataclass, asdict
-from typing import Dict, List, Any, Optional
+from dataclasses import dataclass
+from typing import Dict, List, Any
 
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 from pydantic import BaseModel
 
 DAY_MIN = 1440
-
-# ~700 sessions/day target (you can tweak)
 TARGET_SESSIONS_PER_DAY = 700
 
-# Vehicle mix:
-# Car session: 40 kW and ~1.5 hours (90 min). To keep total near 1.5 MWh/day, cars must be rare.
 VEHICLE_TYPES = [
     {"type": "car", "peakKW": 40.0, "baseDurMin": 90.0, "prob": 0.01},
     {"type": "3w",  "peakKW": 4.0,  "baseDurMin": 60.0, "prob": 0.29},
@@ -80,10 +76,10 @@ class Session:
 
 class Config(BaseModel):
     targetMWh: float = 1.5
-    mode: str = "office"          # office | residential | flat | degen
-    capacity: int = 32            # max simultaneous plugs
-    simMinPerStep: float = 1.0    # how many simulated minutes per engine step
-    engineHz: float = 5.0         # steps per second
+    mode: str = "office"
+    capacity: int = 32
+    simMinPerStep: float = 1.0
+    engineHz: float = 5.0
 
 class Engine:
     def __init__(self):
@@ -127,7 +123,6 @@ class Engine:
         if mode == "degen":
             day = math.exp(-((t01 - 0.55) / 0.16) ** 2)
             return 0.10 + 0.22 * day + 0.10 * max(0.0, math.sin(twoPi * (t01 * 3.7)))
-        # office
         day = math.exp(-((t01 - 0.55) / 0.16) ** 2)
         return 0.05 + 0.26 * day
 
@@ -143,7 +138,6 @@ class Engine:
         self.arrivalScale = clamp(self.arrivalScale, 0.25, 5.0)
 
     def _sample_poisson(self, lam: float) -> int:
-        # small-lambda Poisson sampler
         L = math.exp(-lam)
         k = 0
         p = 1.0
@@ -165,16 +159,13 @@ class Engine:
         age = nowMin - s.startMin
         if age < 0 or age >= s.durMin:
             return 0.0
-
         if age <= s.rampMin:
             return s.peakKW * (age / max(1.0, s.rampMin))
-
         if age <= s.rampMin + s.holdMin:
             return s.peakKW
-
         ta = age - (s.rampMin + s.holdMin)
         t01 = clamp(ta / max(1.0, s.taperMin), 0.0, 1.0)
-        ease = 1.0 - (t01 * t01)   # quadratic ease out
+        ease = 1.0 - (t01 * t01)
         return s.peakKW * clamp(ease, 0.0, 1.0)
 
     def _new_session(self, nowMin: float) -> Session:
@@ -185,13 +176,10 @@ class Engine:
         peak = float(v["peakKW"])
         dur = float(v["baseDurMin"]) * rand(0.90, 1.15)
 
-        # degen tweaks but still capped
         if mode == "degen" and vtype == "car" and random.random() < 0.10:
             peak = rand(32.0, 40.0)
 
         ramp = rand(5, 10) if vtype == "car" else rand(2, 6)
-
-        # more realistic: cars hold less at peak, taper more
         hold = dur * (rand(0.20, 0.35) if vtype == "car" else rand(0.45, 0.65))
         taper = max(8.0, dur - ramp - hold)
 
@@ -232,7 +220,7 @@ class Engine:
         if self.paused:
             return
 
-        mult = max(0.05, float(self.cfg.simMinPerStep))  # simulated minutes per step
+        mult = max(0.05, float(self.cfg.simMinPerStep))
         cap = max(1, int(self.cfg.capacity))
         mode = self.cfg.mode
 
@@ -255,7 +243,6 @@ class Engine:
         totalKW = sum(self._power_at(s, self.simMin) for s in self.sessions)
         self.energyKWh += totalKW * (mult / 60.0)
 
-        # remove completed
         kept = []
         for s in self.sessions:
             done = (self.simMin - s.startMin) >= s.durMin
@@ -265,16 +252,13 @@ class Engine:
                 kept.append(s)
         self.sessions = kept
 
-        # time forward
         self.simMin += mult
         self.simSec = int(self.simMin * 60)
 
-        # loop day
         if self.simMin >= DAY_MIN:
             self.restart()
             return
 
-        # push series
         self.series_t.append(self.simMin)
         self.series_pkw.append(totalKW)
         self.series_oi.append(float(len(self.sessions)))
@@ -296,10 +280,7 @@ class Engine:
 
         targetKWh = max(0.1, self.cfg.targetMWh) * 1000.0
         return {
-            "meta": {
-                "mark": "Mark1",
-                "theme": THEME,
-            },
+            "meta": { "mark": "Mark1", "theme": THEME },
             "config": self.cfg.model_dump(),
             "now": {
                 "simMin": self.simMin,
@@ -309,8 +290,9 @@ class Engine:
                 "totalKW": totalKW,
                 "energyKWh": self.energyKWh,
                 "targetKWh": targetKWh,
-                "arrivalsPerMin": self._base_arrival_rate_per_min(self.cfg.mode, (self.simMin % DAY_MIN)/DAY_MIN)
-                                 * self.arrivalScale * self.arrivalNudge,
+                "arrivalsPerMin": self._base_arrival_rate_per_min(
+                    self.cfg.mode, (self.simMin % DAY_MIN)/DAY_MIN
+                ) * self.arrivalScale * self.arrivalNudge,
                 "corr": rho,
             },
             "series": {
@@ -328,7 +310,7 @@ app = FastAPI(title="DeGen Energy Terminal API", version="1.0")
 
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["*"],  # lock this down in production
+    allow_origins=["*"],  # tighten later
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
@@ -337,7 +319,6 @@ app.add_middleware(
 @app.get("/health")
 def health():
     return {"ok": True, "mark": "Mark1"}
-
 
 @app.get("/api/state")
 def api_state():

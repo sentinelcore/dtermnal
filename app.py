@@ -339,8 +339,13 @@ engine = Engine()
 
 def save_snapshot_to_store():
     # called from the background thread
-    snap = engine.snapshot()
-    redis_client.set(SNAPSHOT_KEY, json.dumps(snap))
+    try:
+        snap = engine.snapshot()
+        redis_client.set(SNAPSHOT_KEY, json.dumps(snap))
+    except Exception as e:
+        # optional: log instead of crashing the loop
+        print("Redis save error:", e)
+
 
 
 origins = ["*"]
@@ -362,15 +367,18 @@ def health():
 
 @app.get("/api/state")
 def api_state():
-    # try to serve the last persisted snapshot so every instance is consistent
-    raw = redis_client.get(SNAPSHOT_KEY)
-    if raw:
-        return json.loads(raw)
+    # try Redis first
+    try:
+        raw = redis_client.get(SNAPSHOT_KEY)
+        if raw:
+            return json.loads(raw)
+    except Exception as e:
+        print("Redis read error:", e)
 
-    # fallback: if store is empty (just booted), use in-memory snapshot
+    # fallback to in-memory snapshot so API still works
     with engine.lock:
-        snap = engine.snapshot()
-    return snap
+        return engine.snapshot()
+
 
 
 @app.post("/api/config")
@@ -397,7 +405,6 @@ def _run_loop():
         with engine.lock:
             engine.step()
             save_snapshot_to_store()
-            hz = max(1.0, float(engine.cfg.engineHz))
-        time.sleep(1.0 / hz)
+        time.sleep(0.5)
 
 threading.Thread(target=_run_loop, daemon=True).start()

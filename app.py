@@ -77,7 +77,7 @@ class Session:
     taperMin: float
 
 class Config(BaseModel):
-    targetMWh: float = 1.5
+    targetMWh: float = 19
     mode: str = "office"
     capacity: int = 32
     simMinPerStep: float = 1.0
@@ -87,6 +87,9 @@ class Engine:
     def __init__(self):
         self.lock = threading.Lock()
         self.cfg = Config()
+
+        # real-time tracking (sim time derived from wall clock)
+        self.last_ts = time.time()
 
         self.paused = False
         self.simMin = 0.0

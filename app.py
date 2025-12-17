@@ -133,16 +133,20 @@ class Engine:
     def _base_arrival_rate_per_min(self, mode: str, t01: float) -> float:
         twoPi = math.pi * 2
         if mode == "flat":
-            return 0.14 + 0.02 * math.sin(twoPi * (t01 - 0.15))
-        if mode == "residential":
+            base = 0.14 + 0.02 * math.sin(twoPi * (t01 - 0.15))
+        elif mode == "residential":
             morning = math.exp(-((t01 - 0.30) / 0.08) ** 2)
             evening = math.exp(-((t01 - 0.80) / 0.10) ** 2)
-            return 0.06 + 0.12 * morning + 0.25 * evening
-        if mode == "degen":
+            base = 0.06 + 0.12 * morning + 0.25 * evening
+        elif mode == "degen":
             day = math.exp(-((t01 - 0.55) / 0.16) ** 2)
-            return 0.10 + 0.22 * day + 0.10 * max(0.0, math.sin(twoPi * (t01 * 3.7)))
-        day = math.exp(-((t01 - 0.55) / 0.16) ** 2)
-        return (0.05 + 0.26 * day) * 4.0
+            base = 0.10 + 0.22 * day + 0.10 * max(0.0, math.sin(twoPi * (t01 * 3.7)))
+        else:  # office
+            day = math.exp(-((t01 - 0.55) / 0.16) ** 2)
+            base = 0.05 + 0.26 * day
+
+        return base * 4.0
+
 
 
     def _recompute_arrival_scale(self):
@@ -242,14 +246,17 @@ class Engine:
         if self.paused:
             return
 
-        # use real elapsed time to advance sim
+        # use real elapsed time to advance sim, but clamp big hiccups
         now_ts = time.time()
-        dt_sec = now_ts - self.last_ts
-        if dt_sec <= 0:
+        raw_dt = now_ts - self.last_ts
+        if raw_dt <= 0:
             return
+
+        # at most 1.0 sec per tick, at least 0.05 sec to avoid tiny noise
+        dt_sec = clamp(raw_dt, 0.05, 1.0)
         self.last_ts = now_ts
 
-        dt_min = dt_sec / 60.0  # real minutes passed
+        dt_min = dt_sec / 60.0  # real minutes passed (smoothed)
         cap = max(1, int(self.cfg.capacity))
         mode = self.cfg.mode
 
@@ -257,7 +264,12 @@ class Engine:
         self._update_arrival_nudge()
 
         # arrival rate is per-minute, scale by dt_min
-        lam = self._base_arrival_rate_per_min(mode, t01) * self.arrivalScale * self.arrivalNudge * dt_min
+        lam = (
+            self._base_arrival_rate_per_min(mode, t01)
+            * self.arrivalScale
+            * self.arrivalNudge
+            * dt_min
+        )
         if mode == "degen" and random.random() < 0.05 * dt_min:
             lam *= rand(1.6, 2.8)
 
@@ -283,7 +295,7 @@ class Engine:
                 kept.append(s)
         self.sessions = kept
 
-        # advance simulated minutes by real minutes elapsed
+        # advance simulated minutes by (smoothed) real minutes elapsed
         self.simMin += dt_min
         self.simSec = int(self.simMin * 60)
 
@@ -299,6 +311,7 @@ class Engine:
             self.series_t.pop(0)
             self.series_pkw.pop(0)
             self.series_oi.pop(0)
+
 
 
     def snapshot(self) -> Dict[str, Any]:

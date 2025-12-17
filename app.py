@@ -12,6 +12,10 @@ from fastapi.middleware.cors import CORSMiddleware
 from pydantic import BaseModel
 from fastapi.middleware.cors import CORSMiddleware
 
+import os
+import json
+
+
 
 DAY_MIN = 1440
 TARGET_SESSIONS_PER_DAY = 700
@@ -33,6 +37,15 @@ THEME = {
     "topBarStroke": "rgba(80, 220, 140, 0.95)",
     "text": "rgba(255,255,255,0.78)",
 }
+
+# ---------- Redis: fast shared state store ----------
+
+import redis
+
+REDIS_URL = os.getenv("REDIS_URL", "redis://localhost:6379/0")
+redis_client = redis.Redis.from_url(REDIS_URL)
+SNAPSHOT_KEY = "degen:mark1:snapshot"
+
 
 def clamp(x: float, a: float, b: float) -> float:
     return max(a, min(b, x))
@@ -324,6 +337,11 @@ class Engine:
 
 engine = Engine()
 
+def save_snapshot_to_store():
+    # called from the background thread
+    snap = engine.snapshot()
+    redis_client.set(SNAPSHOT_KEY, json.dumps(snap))
+
 
 origins = ["*"]
 
@@ -344,8 +362,16 @@ def health():
 
 @app.get("/api/state")
 def api_state():
+    # try to serve the last persisted snapshot so every instance is consistent
+    raw = redis_client.get(SNAPSHOT_KEY)
+    if raw:
+        return json.loads(raw)
+
+    # fallback: if store is empty (just booted), use in-memory snapshot
     with engine.lock:
-        return engine.snapshot()
+        snap = engine.snapshot()
+    return snap
+
 
 @app.post("/api/config")
 def api_config(cfg: Config):
@@ -370,9 +396,8 @@ def _run_loop():
     while True:
         with engine.lock:
             engine.step()
-        # how often we recompute; doesn't affect sim speed now,
-        # because sim speed is tied to real time
-        time.sleep(0.5)
-
+            save_snapshot_to_store()
+            hz = max(1.0, float(engine.cfg.engineHz))
+        time.sleep(1.0 / hz)
 
 threading.Thread(target=_run_loop, daemon=True).start()

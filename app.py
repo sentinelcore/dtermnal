@@ -10,6 +10,8 @@ from typing import Dict, List, Any
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 from pydantic import BaseModel
+from fastapi.middleware.cors import CORSMiddleware
+
 
 DAY_MIN = 1440
 TARGET_SESSIONS_PER_DAY = 700
@@ -306,15 +308,23 @@ class Engine:
 
 engine = Engine()
 
+
+origins = [
+    "https://resplendent-kheer-6da5ff.netlify.app",  # your Netlify site
+    "http://localhost:3000",  # optional, for local dev
+    "http://localhost:5173",  # optional, for local dev
+]
+
 app = FastAPI(title="DeGen Energy Terminal API", version="1.0")
 
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["*"],  # tighten later
+    allow_origins=origins,
     allow_credentials=True,
-    allow_methods=["*"],
-    allow_headers=["*"],
+    allow_methods=["*"],   # GET, POST, etc.
+    allow_headers=["*"],   # Authorization, Content-Type, etc.
 )
+
 
 @app.get("/health")
 def health():

@@ -309,6 +309,38 @@ class Engine:
 
 engine = Engine()
 
+def load_engine_from_redis():
+    try:
+        raw = redis_client.get(SNAPSHOT_KEY)
+        if not raw:
+            return
+        snap = json.loads(raw)
+
+        # restore only what you need for continuity
+        now = snap.get("now", {})
+        engine.simMin = float(now.get("simMin", 0.0))
+        engine.simSec = int(now.get("simSec", 0))
+        engine.energyKWh = float(now.get("energyKWh", 0.0))
+
+        rev = snap.get("revenue", {})
+        engine.lifetimeRevenueUSD = float(rev.get("lifetimeUSD", 0.0))
+
+        # restore series so charts don't restart empty
+        series = snap.get("series", {})
+        engine.series_t = list(series.get("t", []))
+        engine.series_pkw = list(series.get("pkw", []))
+        engine.series_oi = list(series.get("oi", []))
+
+        # restore tape if you want
+        engine.tape = list(snap.get("tape", []))
+
+        print("Loaded state from Redis.")
+    except Exception as e:
+        print("Redis load error:", e)
+
+load_engine_from_redis()
+
+
 app = FastAPI(title="DeGen Energy Terminal API")
 
 app.add_middleware(
@@ -346,6 +378,13 @@ def api_config(cfg: Config):
     engine.cfg = cfg
     engine._recompute_arrival_scale()
     return {"ok": True, "config": cfg.model_dump()}
+
+
+@app.get("/debug/redis")
+def debug_redis():
+    ttl = redis_client.ttl(SNAPSHOT_KEY)
+    return {"ttl": ttl}
+
 
 def loop():
     while True:

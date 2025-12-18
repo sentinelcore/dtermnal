@@ -238,69 +238,69 @@ class Engine:
     # -------------------------
 
     def snapshot(self) -> Dict[str, Any]:
-    totalKW = sum(self._power_at(s, self.simMin) for s in self.sessions)
-    rho = corr(self.series_pkw, self.series_oi)
+        totalKW = sum(self._power_at(s, self.simMin) for s in self.sessions)
+        rho = corr(self.series_pkw, self.series_oi)
 
-    targetKWh = self.cfg.targetMWh * 1000.0
+        targetKWh = self.cfg.targetMWh * 1000.0
 
-    arrivals_per_min = (
-        self._base_arrival_rate_per_min(
-            self.cfg.mode,
-            (self.simMin % DAY_MIN) / DAY_MIN
+        arrivals_per_min = (
+            self._base_arrival_rate_per_min(
+                self.cfg.mode,
+                (self.simMin % DAY_MIN) / DAY_MIN
+            )
+            * self.arrivalScale
+            * self.arrivalNudge
         )
-        * self.arrivalScale
-        * self.arrivalNudge
-    )
 
-    # revenue
-    last60s_rev = totalKW * MARGIN_PER_KWH / 60.0
-    lifetime_protocol = self.lifetimeRevenueUSD * PROTOCOL_FEE_SHARE
+        # revenue
+        last60s_rev = totalKW * MARGIN_PER_KWH / 60.0
+        lifetime_protocol = self.lifetimeRevenueUSD * PROTOCOL_FEE_SHARE
 
-    # top consumers
-    top = sorted(
-        [
-            {
-                "id": s.id,
-                "vtype": s.vtype,
-                "p": self._power_at(s, self.simMin),
-            }
-            for s in self.sessions
-        ],
-        key=lambda x: x["p"],
-        reverse=True,
-    )[:10]
+        # top consumers
+        top = sorted(
+            [
+                {
+                    "id": s.id,
+                    "vtype": s.vtype,
+                    "p": self._power_at(s, self.simMin),
+                }
+                for s in self.sessions
+            ],
+            key=lambda x: x["p"],
+            reverse=True,
+        )[:10]
 
-    return {
-        "meta": {
-            "mark": "Mark1",
-            "theme": THEME,
-        },
-        "config": self.cfg.model_dump(),
-        "now": {
-            "simMin": self.simMin,
-            "simSec": self.simSec,
-            "simTime": fmt_time(self.simSec),
-            "activeVehicles": len(self.sessions),
-            "totalKW": totalKW,
-            "energyKWh": self.energyKWh,
-            "targetKWh": targetKWh,
-            "arrivalsPerMin": arrivals_per_min,
-            "corr": rho,
-        },
-        "series": {
-            "t": self.series_t,
-            "pkw": self.series_pkw,
-            "oi": self.series_oi,
-        },
-        "top": top,
-        "tape": self.tape,
-        "revenue": {
-            "last60sUSD": last60s_rev,
-            "last60sProtocolUSD": last60s_rev * PROTOCOL_FEE_SHARE,
-            "lifetimeUSD": self.lifetimeRevenueUSD,
-            "lifetimeProtocolUSD": lifetime_protocol,
-        },
-    }
+        return {
+            "meta": {
+                "mark": "Mark1",
+                "theme": THEME,
+            },
+            "config": self.cfg.model_dump(),
+            "now": {
+                "simMin": self.simMin,
+                "simSec": self.simSec,
+                "simTime": fmt_time(self.simSec),
+                "activeVehicles": len(self.sessions),
+                "totalKW": totalKW,
+                "energyKWh": self.energyKWh,
+                "targetKWh": targetKWh,
+                "arrivalsPerMin": arrivals_per_min,
+                "corr": rho,
+            },
+            "series": {
+                "t": self.series_t,
+                "pkw": self.series_pkw,
+                "oi": self.series_oi,
+            },
+            "top": top,
+            "tape": self.tape,
+            "revenue": {
+                "last60sUSD": last60s_rev,
+                "last60sProtocolUSD": last60s_rev * PROTOCOL_FEE_SHARE,
+                "lifetimeUSD": self.lifetimeRevenueUSD,
+                "lifetimeProtocolUSD": lifetime_protocol,
+            },
+        }
 
 
 # =====================================================

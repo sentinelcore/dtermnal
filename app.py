@@ -14,16 +14,19 @@ from fastapi.middleware.cors import CORSMiddleware
 from pydantic import BaseModel
 import redis
 
-# -----------------------
-# Global sim constants
-# -----------------------
+# =====================================================
+# Constants
+# =====================================================
 
 DAY_MIN = 1440
 TARGET_SESSIONS_PER_DAY = 6800
 
-# economics
 MARGIN_PER_KWH = 0.004
 PROTOCOL_FEE_SHARE = 0.20
+
+# =====================================================
+# Vehicle definitions
+# =====================================================
 
 VEHICLE_TYPES = [
     {"type": "car", "peakKW": 40.0, "baseDurMin": 90.0, "prob": 0.01},
@@ -33,18 +36,21 @@ VEHICLE_TYPES = [
 
 THEME = {
     "bgGrid": "rgba(255,255,255,0.10)",
-    "powerLine": "rgba(0, 255, 200, 0.95)",
-    "oiLine": "rgba(255, 215, 0, 0.95)",
+    "powerLine": "rgba(0,255,200,0.95)",
+    "oiLine": "rgba(255,215,0,0.95)",
 }
 
-# -----------------------
+# =====================================================
 # Redis
-# -----------------------
+# =====================================================
 
 REDIS_URL = os.getenv("REDIS_URL", "redis://localhost:6379/0")
 redis_client = redis.Redis.from_url(REDIS_URL, decode_responses=True)
 SNAPSHOT_KEY = "degen:mark1:snapshot"
 
+# =====================================================
+# Helpers
+# =====================================================
 
 def clamp(x: float, a: float, b: float) -> float:
     return max(a, min(b, x))
@@ -72,6 +78,9 @@ def corr(xs: List[float], ys: List[float]) -> float:
     dy = sum((ys[-n+i] - my) ** 2 for i in range(n))
     return clamp(num / (math.sqrt(dx * dy) + 1e-6), -1.0, 1.0)
 
+# =====================================================
+# Models
+# =====================================================
 
 @dataclass
 class Session:
@@ -89,17 +98,22 @@ class Config(BaseModel):
     targetMWh: float = 19.0
     mode: str = "office"
     capacity: int = 1000
-    simMinPerStep: float = 0.25  # 15 sec sim
+    simMinPerStep: float = 0.25   # 15s sim
     engineHz: float = 4.0
 
+# =====================================================
+# Engine
+# =====================================================
 
 class Engine:
     def __init__(self):
         self.lock = threading.Lock()
         self.cfg = Config()
 
+        self.paused = False
         self.simMin = 0.0
         self.simSec = 0
+
         self.energyKWh = 0.0
         self.lifetimeRevenueUSD = 0.0
 
@@ -109,15 +123,15 @@ class Engine:
         self.series_t: List[float] = []
         self.series_pkw: List[float] = []
         self.series_oi: List[float] = []
+        self.max_points = 420
 
         self.tape: List[Dict[str, Any]] = []
-        self.max_points = 420
 
         self.arrivalScale = 1.0
         self.arrivalNudge = 1.0
         self._recompute_arrival_scale()
 
-    # -----------------------
+    # -------------------------
 
     def _base_arrival_rate_per_min(self, mode: str, t01: float) -> float:
         if mode == "office":
@@ -125,13 +139,15 @@ class Engine:
         return 0.15
 
     def _recompute_arrival_scale(self):
-        avg = sum(self._base_arrival_rate_per_min(self.cfg.mode, i / 240) for i in range(240)) / 240
+        avg = sum(
+            self._base_arrival_rate_per_min(self.cfg.mode, i / 240)
+            for i in range(240)
+        ) / 240
         self.arrivalScale = TARGET_SESSIONS_PER_DAY / max(1e-6, avg * DAY_MIN)
 
     def _sample_poisson(self, lam: float) -> int:
         L = math.exp(-lam)
-        k = 0
-        p = 1.0
+        k, p = 0, 1.0
         while p > L:
             k += 1
             p *= random.random()
@@ -168,42 +184,48 @@ class Engine:
         self.sessionId += 1
         return s
 
-    # -----------------------
+    # -------------------------
 
     def step(self):
-        mult = self.cfg.simMinPerStep
+        if self.paused:
+            return
 
-        # arrivals
+        mult = self.cfg.simMinPerStep
         t01 = (self.simMin % DAY_MIN) / DAY_MIN
-        lam = self._base_arrival_rate_per_min(self.cfg.mode, t01) * self.arrivalScale * mult
+
+        lam = (
+            self._base_arrival_rate_per_min(self.cfg.mode, t01)
+            * self.arrivalScale
+            * mult
+        )
+
         arrivals = self._sample_poisson(lam)
 
         for _ in range(arrivals):
             if len(self.sessions) < self.cfg.capacity:
                 self.sessions.append(self._new_session())
 
-        # power + energy integration (THIS WAS THE BUG)
+        # 🔴 FIX: energy & revenue ALWAYS integrate
         totalKW = sum(self._power_at(s, self.simMin) for s in self.sessions)
         delta_kwh = totalKW * (mult / 60.0)
 
         self.energyKWh += delta_kwh
         self.lifetimeRevenueUSD += delta_kwh * MARGIN_PER_KWH
 
-        # cleanup finished sessions
-        self.sessions = [s for s in self.sessions if (self.simMin - s.startMin) < s.durMin]
+        self.sessions = [
+            s for s in self.sessions
+            if (self.simMin - s.startMin) < s.durMin
+        ]
 
-        # advance time
         self.simMin += mult
         self.simSec = int(self.simMin * 60)
 
-        # reset day
         if self.simMin >= DAY_MIN:
             self.simMin = 0
             self.simSec = 0
-            self.energyKWh = 0
+            self.energyKWh = 0.0
             self.sessions.clear()
 
-        # series
         self.series_t.append(self.simMin)
         self.series_pkw.append(totalKW)
         self.series_oi.append(len(self.sessions))
@@ -213,17 +235,21 @@ class Engine:
             self.series_pkw.pop(0)
             self.series_oi.pop(0)
 
+    # -------------------------
+
     def snapshot(self) -> Dict[str, Any]:
         totalKW = sum(self._power_at(s, self.simMin) for s in self.sessions)
         rho = corr(self.series_pkw, self.series_oi)
 
-        last60_rev = totalKW * MARGIN_PER_KWH / 60.0
+        last60s_rev = totalKW * MARGIN_PER_KWH / 60.0
 
         return {
             "meta": {"mark": "Mark1", "theme": THEME},
+            "config": self.cfg.model_dump(),
             "now": {
-                "simTime": fmt_time(self.simSec),
                 "simMin": self.simMin,
+                "simSec": self.simSec,
+                "simTime": fmt_time(self.simSec),
                 "activeVehicles": len(self.sessions),
                 "totalKW": totalKW,
                 "energyKWh": self.energyKWh,
@@ -235,21 +261,20 @@ class Engine:
                 "oi": self.series_oi,
             },
             "revenue": {
-                "last60sUSD": last60_rev,
-                "last60sProtocolUSD": last60_rev * PROTOCOL_FEE_SHARE,
+                "last60sUSD": last60s_rev,
+                "last60sProtocolUSD": last60s_rev * PROTOCOL_FEE_SHARE,
                 "lifetimeUSD": self.lifetimeRevenueUSD,
                 "lifetimeProtocolUSD": self.lifetimeRevenueUSD * PROTOCOL_FEE_SHARE,
             },
         }
 
+# =====================================================
+# App
+# =====================================================
 
 engine = Engine()
 
-# -----------------------
-# FastAPI
-# -----------------------
-
-app = FastAPI(title="DeGen Energy Terminal")
+app = FastAPI(title="DeGen Energy Terminal API")
 
 app.add_middleware(
     CORSMiddleware,
@@ -258,12 +283,34 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
+@app.get("/health")
+def health():
+    return {"ok": True, "mark": "Mark1"}
+
 @app.get("/api/state")
 def api_state():
     snap = engine.snapshot()
     redis_client.set(SNAPSHOT_KEY, json.dumps(snap))
     return snap
 
+@app.post("/api/pause")
+def api_pause(pause: bool):
+    engine.paused = pause
+    return {"ok": True, "paused": engine.paused}
+
+@app.post("/api/restart")
+def api_restart():
+    engine.simMin = 0
+    engine.simSec = 0
+    engine.energyKWh = 0
+    engine.sessions.clear()
+    return {"ok": True}
+
+@app.post("/api/config")
+def api_config(cfg: Config):
+    engine.cfg = cfg
+    engine._recompute_arrival_scale()
+    return {"ok": True, "config": cfg.model_dump()}
 
 def loop():
     while True:

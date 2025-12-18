@@ -962,6 +962,8 @@
         if (!res.ok) throw new Error("API error");
         const data = await res.json();
 
+        if (!data || !data.series || !data.series.t) { return; }
+
         const now = data.now || {};
         const cfg = data.config || {};
         const series = data.series || {};

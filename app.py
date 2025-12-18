@@ -19,8 +19,12 @@ import redis
 # -----------------------
 
 DAY_MIN = 1440
-# tuned for ~19 MWh/day with current session mix
 TARGET_SESSIONS_PER_DAY = 6800
+
+# economics
+MARGIN_PER_KWH = 0.004          # $0.004 per kWh
+PROTOCOL_FEE_SHARE = 0.20       # 20% to protocol
+
 
 VEHICLE_TYPES = [
     {"type": "car", "peakKW": 40.0, "baseDurMin": 90.0, "prob": 0.01},
@@ -117,6 +121,9 @@ class Engine:
         self.energyKWh = 0.0
         self.sessions: List[Session] = []
         self.sessionId = 1
+
+        # revenue metrics
+        self.lifetimeRevenueUSD = 0.0  # cumulative margin across all time
 
         self.series_t: List[float] = []
         self.series_pkw: List[float] = []
@@ -244,6 +251,7 @@ class Engine:
         self.series_oi = []
         self.tape = []
         self.arrivalNudge = 1.0
+        # IMPORTANT: do NOT reset lifetimeRevenueUSD here
         self._recompute_arrival_scale()
 
     def step(self):
@@ -278,7 +286,13 @@ class Engine:
 
         totalKW = sum(self._power_at(s, self.simMin) for s in self.sessions)
         # kW * hours = kWh; mult / 60 is hours
-        self.energyKWh += totalKW * (mult / 60.0)
+        delta_kwh = totalKW * (mult / 60.0)
+        self.energyKWh += delta_kwh
+
+        # revenue = margin * energy
+        delta_revenue = delta_kwh * MARGIN_PER_KWH
+        self.lifetimeRevenueUSD += delta_revenue
+
 
         kept: List[Session] = []
         for s in self.sessions:
@@ -305,20 +319,18 @@ class Engine:
             self.series_pkw.pop(0)
             self.series_oi.pop(0)
 
-    def snapshot(self) -> Dict[str, Any]:
+        def snapshot(self) -> Dict[str, Any]:
         totalKW = sum(self._power_at(s, self.simMin) for s in self.sessions)
-        powers = [
-            {"id": s.id, "vtype": s.vtype, "p": self._power_at(s, self.simMin)}
-            for s in self.sessions
-        ]
-        powers.sort(key=lambda x: x["p"], reverse=True)
-        top = powers[:10]
-
-        xs = self.series_oi[-220:]
-        ys = self.series_pkw[-220:]
-        rho = corr(xs, ys)
-
+        ...
         targetKWh = max(0.1, self.cfg.targetMWh) * 1000.0
+
+        # approximate revenue over next 60s at current power
+        # power (kW) * 1h = kWh, so 60s is 1/60th of an hour
+        last60s_rev = totalKW * MARGIN_PER_KWH / 60.0
+        last60s_protocol = last60s_rev * PROTOCOL_FEE_SHARE
+
+        lifetime_protocol = self.lifetimeRevenueUSD * PROTOCOL_FEE_SHARE
+
         return {
             "meta": {"mark": "Mark1", "theme": THEME},
             "config": self.cfg.model_dump(),
@@ -344,7 +356,14 @@ class Engine:
             },
             "top": top,
             "tape": self.tape,
+            "revenue": {
+                "lifetimeUSD": self.lifetimeRevenueUSD,
+                "lifetimeProtocolUSD": lifetime_protocol,
+                "last60sUSD": last60s_rev,
+                "last60sProtocolUSD": last60s_protocol,
+            },
         }
+
 
 
 engine = Engine()

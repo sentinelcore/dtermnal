@@ -1,437 +1,988 @@
-<!doctype html>
+<!DOCTYPE html>
 <html lang="en">
 <head>
-  <meta charset="utf-8" />
-  <meta name="viewport" content="width=device-width,initial-scale=1" />
-  <title>DeGen Energy Terminal - Mark1 (API)</title>
+  <meta charset="UTF-8" />
+  <title>DeCharge DeGen Energy Terminal – Mark1</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+
+  <!-- Chart.js CDN -->
+  <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+
   <style>
-    :root { color-scheme: dark; }
-    body{ margin:0; font-family: ui-sans-serif, system-ui, -apple-system, Segoe UI, Roboto, Helvetica, Arial; background:#070b18; color:#e8ecff; }
-    .wrap{ max-width:1200px; margin:18px auto; padding:0 14px 22px; }
-    .card{ background: rgba(255,255,255,0.06); border: 1px solid rgba(255,255,255,0.10); border-radius: 16px; padding: 14px; box-shadow: 0 14px 34px rgba(0,0,0,0.35); }
-    .top{ display:flex; gap:12px; align-items:flex-start; justify-content:space-between; flex-wrap:wrap; margin-bottom:12px; }
-    h1{ margin:0; font-size:16px; letter-spacing:.2px; opacity:.95; }
-    .kpis{ display:flex; gap:10px; flex-wrap:wrap; align-items:stretch; }
-    .kpi{ background: rgba(255,255,255,0.05); border: 1px solid rgba(255,255,255,0.08); border-radius: 12px; padding: 10px 12px; min-width: 170px; }
-    .label{ font-size:12px; opacity:.72; }
-    .value{ margin-top:6px; font-size:20px; font-weight:750; }
-    .sub{ margin-top:6px; font-size:12px; opacity:.72; }
-    .mono{ font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", monospace; }
-
-    .grid{ display:grid; grid-template-columns: 1fr 1fr; gap: 12px; margin-top: 12px; }
-    @media (max-width: 980px){ .grid{ grid-template-columns:1fr; } }
-
-    .panel{ background: rgba(0,0,0,0.22); border: 1px solid rgba(255,255,255,0.08); border-radius: 14px; padding: 10px; }
-    .panelTitle{ display:flex; align-items:center; justify-content:space-between; font-size:12px; opacity:.78; margin-bottom:8px; }
-    canvas{ width:100%; height:260px; display:block; border-radius:12px; }
-
-    .bottom{ display:grid; grid-template-columns: 1.3fr 0.7fr; gap:12px; margin-top: 12px; }
-    @media (max-width: 980px){ .bottom{ grid-template-columns:1fr; } }
-
-    .controls{ display:grid; gap:10px; }
-    .row{ display:grid; grid-template-columns:1fr 1fr; gap:10px; }
-    .field{ background: rgba(255,255,255,0.05); border: 1px solid rgba(255,255,255,0.08); border-radius: 12px; padding: 10px; }
-    .field label{ display:block; font-size:12px; opacity:.72; margin-bottom:6px; }
-    input, select, button{
-      width:100%; font-size:14px; padding:10px; border-radius:10px; border: 1px solid rgba(255,255,255,0.15);
-      background: rgba(10,14,30,0.75); color:#e8ecff; outline:none;
+    :root {
+      --bg: #020617;          /* deep slate/navy */
+      --bg-elevated: rgba(15, 23, 42, 0.96);
+      --border-soft: rgba(148, 163, 184, 0.35);
+      --primary: #0ea5e9;     /* cyan */
+      --primary-soft: rgba(14, 165, 233, 0.18);
+      --accent: #22c55e;      /* green */
+      --accent-soft: rgba(34, 197, 94, 0.16);
+      --purple: #a855f7;
+      --text-main: #e5e7eb;
+      --text-muted: #9ca3af;
+      --danger: #f97373;
+      --card-radius: 18px;
     }
-    button{ cursor:pointer; font-weight:750; background:#18265f; border:1px solid rgba(255,255,255,0.18); }
-    button:hover{ filter:brightness(1.08); }
 
-    .tape{ height: 232px; overflow:hidden; border-radius: 12px; border:1px solid rgba(255,255,255,0.08); background: rgba(0,0,0,0.24); padding: 8px; }
-    .tline{ font-size:12px; line-height:1.45; opacity:.9; display:flex; justify-content:space-between; gap:12px; font-family: ui-monospace, Menlo, Consolas, monospace; }
-    .tleft{ white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
-    .tright{ opacity:.75; white-space:nowrap; }
-    .green{ color: rgba(80,220,140,0.95); }
-    .red{ color: rgba(255,90,110,0.92); }
-    .hint{ font-size:12px; opacity:.72; line-height:1.35; }
-    .bar{ height:10px; border-radius:999px; background: rgba(255,255,255,0.10); overflow:hidden; border:1px solid rgba(255,255,255,0.10); margin-top: 8px; }
-    .bar > div{ height:100%; width:0%; background: rgba(120,160,255,0.85); }
+    * {
+      box-sizing: border-box;
+    }
+
+    body {
+      margin: 0;
+      padding: 0;
+      font-family: system-ui, -apple-system, BlinkMacSystemFont, "SF Pro Text", sans-serif;
+      background:
+        radial-gradient(circle at top left, rgba(56, 189, 248, 0.15), transparent 55%),
+        radial-gradient(circle at top right, rgba(129, 140, 248, 0.18), transparent 55%),
+        radial-gradient(circle at bottom, rgba(34, 197, 94, 0.12), transparent 55%),
+        var(--bg);
+      color: var(--text-main);
+      min-height: 100vh;
+    }
+
+    .shell {
+      max-width: 1400px;
+      margin: 0 auto;
+      padding: 20px 20px 32px;
+    }
+
+    header {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      margin-bottom: 18px;
+      gap: 16px;
+    }
+
+    .brand {
+      display: flex;
+      flex-direction: column;
+      gap: 4px;
+    }
+
+    .brand-title {
+      font-size: 1.4rem;
+      font-weight: 700;
+      letter-spacing: 0.06em;
+      text-transform: uppercase;
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+    }
+
+    .brand-pill {
+      font-size: 0.75rem;
+      padding: 2px 8px;
+      border-radius: 999px;
+      border: 1px solid rgba(148, 163, 184, 0.5);
+      text-transform: uppercase;
+      letter-spacing: 0.08em;
+      color: var(--text-muted);
+    }
+
+    .brand-dot {
+      width: 10px;
+      height: 10px;
+      border-radius: 999px;
+      background: radial-gradient(circle at 30% 20%, #e5f9ff, #22c55e);
+      box-shadow: 0 0 14px rgba(34, 197, 94, 0.85);
+    }
+
+    .brand-sub {
+      font-size: 0.9rem;
+      color: var(--text-muted);
+    }
+
+    .header-right {
+      display: flex;
+      gap: 10px;
+      align-items: center;
+      flex-wrap: wrap;
+      justify-content: flex-end;
+    }
+
+    .badge {
+      padding: 6px 10px;
+      border-radius: 999px;
+      background: rgba(15, 23, 42, 0.9);
+      border: 1px solid rgba(148, 163, 184, 0.6);
+      font-size: 0.75rem;
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+    }
+
+    .badge span.key {
+      text-transform: uppercase;
+      letter-spacing: 0.08em;
+      color: var(--text-muted);
+      font-size: 0.7rem;
+    }
+    .badge span.value {
+      font-weight: 600;
+    }
+
+    .badge.degen {
+      border-color: var(--primary);
+      background: linear-gradient(120deg, rgba(15, 23, 42, 0.9), rgba(8, 47, 73, 0.95));
+    }
+
+    /* Layout grid */
+    .grid {
+      display: grid;
+      grid-template-columns: 2fr 1.2fr;
+      grid-template-rows: auto auto;
+      gap: 16px;
+    }
+
+    @media (max-width: 1024px) {
+      .grid {
+        grid-template-columns: 1fr;
+      }
+    }
+
+    .card {
+      background: var(--bg-elevated);
+      border-radius: var(--card-radius);
+      border: 1px solid var(--border-soft);
+      box-shadow:
+        0 18px 60px rgba(15, 23, 42, 0.9),
+        0 0 0 1px rgba(15, 23, 42, 0.8);
+      padding: 14px 16px 16px;
+      position: relative;
+      overflow: hidden;
+    }
+
+    .card::before {
+      content: "";
+      position: absolute;
+      inset: 0;
+      pointer-events: none;
+      background: radial-gradient(circle at top left, rgba(56, 189, 248, 0.12), transparent 60%);
+      opacity: 0.7;
+    }
+
+    .card-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      gap: 8px;
+      margin-bottom: 10px;
+    }
+
+    .card-title {
+      font-size: 0.85rem;
+      text-transform: uppercase;
+      letter-spacing: 0.14em;
+      color: var(--text-muted);
+    }
+
+    .pill {
+      font-size: 0.7rem;
+      text-transform: uppercase;
+      letter-spacing: 0.12em;
+      padding: 3px 8px;
+      border-radius: 999px;
+      border: 1px solid rgba(148, 163, 184, 0.5);
+      color: var(--text-muted);
+    }
+
+    .pill.primary {
+      border-color: var(--primary);
+      color: var(--primary);
+      background: rgba(8, 47, 73, 0.8);
+    }
+
+    .pill.accent {
+      border-color: var(--accent);
+      color: var(--accent);
+      background: rgba(5, 46, 22, 0.85);
+    }
+
+    /* Top metrics bar */
+    .metrics-row {
+      display: grid;
+      grid-template-columns: repeat(4, minmax(0, 1fr));
+      gap: 10px;
+      margin-bottom: 12px;
+    }
+
+    @media (max-width: 768px) {
+      .metrics-row {
+        grid-template-columns: repeat(2, minmax(0, 1fr));
+      }
+    }
+
+    .metric-tile {
+      background: radial-gradient(circle at top, rgba(15, 23, 42, 0.4), rgba(15, 23, 42, 0.9));
+      border-radius: 14px;
+      padding: 8px 10px;
+      border: 1px solid rgba(30, 64, 175, 0.7);
+      display: flex;
+      flex-direction: column;
+      gap: 4px;
+    }
+
+    .metric-label {
+      font-size: 0.7rem;
+      text-transform: uppercase;
+      letter-spacing: 0.16em;
+      color: var(--text-muted);
+    }
+
+    .metric-value {
+      font-size: 1.1rem;
+      font-weight: 600;
+    }
+
+    .metric-sub {
+      font-size: 0.7rem;
+      color: var(--text-muted);
+    }
+
+    .metric-highlight {
+      color: var(--accent);
+    }
+
+    .metric-danger {
+      color: var(--danger);
+    }
+
+    /* Chart area */
+    #powerChart {
+      width: 100%;
+      height: 260px;
+    }
+
+    /* Revenue panel */
+    .revenue-grid {
+      display: grid;
+      grid-template-columns: 1.3fr 1fr;
+      gap: 10px;
+    }
+
+    @media (max-width: 768px) {
+      .revenue-grid {
+        grid-template-columns: 1fr;
+      }
+    }
+
+    .rev-main {
+      background: radial-gradient(circle at top, var(--primary-soft), rgba(15, 23, 42, 0.95));
+      border-radius: 14px;
+      padding: 10px 12px;
+      border: 1px solid rgba(56, 189, 248, 0.55);
+      display: flex;
+      flex-direction: column;
+      gap: 6px;
+    }
+
+    .rev-main-title {
+      font-size: 0.75rem;
+      text-transform: uppercase;
+      letter-spacing: 0.14em;
+      color: var(--text-muted);
+    }
+
+    .rev-main-value {
+      font-size: 1.8rem;
+      font-weight: 700;
+    }
+
+    .rev-main-sub {
+      font-size: 0.75rem;
+      color: var(--text-muted);
+    }
+
+    .rev-split {
+      display: flex;
+      gap: 8px;
+      margin-top: 4px;
+    }
+
+    .rev-chip {
+      flex: 1;
+      border-radius: 999px;
+      padding: 5px 9px;
+      border: 1px solid rgba(148, 163, 184, 0.6);
+      font-size: 0.7rem;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      color: var(--text-muted);
+    }
+
+    .rev-chip span.value {
+      color: var(--accent);
+      font-weight: 600;
+    }
+
+    .rev-side {
+      background: radial-gradient(circle at top, var(--accent-soft), rgba(15, 23, 42, 0.97));
+      border-radius: 14px;
+      padding: 10px 12px;
+      border: 1px solid rgba(34, 197, 94, 0.55);
+      display: flex;
+      flex-direction: column;
+      gap: 6px;
+      font-size: 0.8rem;
+    }
+
+    .rev-side-title {
+      text-transform: uppercase;
+      letter-spacing: 0.14em;
+      color: var(--text-muted);
+      font-size: 0.72rem;
+    }
+
+    .rev-side-row {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+    }
+
+    .rev-side-row span.value {
+      font-weight: 600;
+      color: var(--accent);
+    }
+
+    /* Vehicles section */
+    .vehicles-grid {
+      display: grid;
+      grid-template-columns: 1.6fr 1.1fr;
+      gap: 12px;
+      align-items: stretch;
+    }
+
+    @media (max-width: 1024px) {
+      .vehicles-grid {
+        grid-template-columns: 1fr;
+      }
+    }
+
+    .vehicle-wall {
+      background: radial-gradient(circle at top, rgba(15, 23, 42, 0.5), rgba(15, 23, 42, 0.98));
+      border-radius: 14px;
+      padding: 10px 12px;
+      border: 1px solid rgba(51, 65, 85, 0.7);
+      display: flex;
+      flex-direction: column;
+      gap: 8px;
+      min-height: 220px;
+    }
+
+    .vehicle-wall-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      font-size: 0.78rem;
+      color: var(--text-muted);
+    }
+
+    .vehicle-counts {
+      display: flex;
+      gap: 8px;
+      font-size: 0.75rem;
+    }
+
+    .vehicle-counts span {
+      display: inline-flex;
+      align-items: center;
+      gap: 4px;
+    }
+
+    .dot-car {
+      width: 8px;
+      height: 8px;
+      border-radius: 999px;
+      background: var(--primary);
+    }
+    .dot-3w {
+      width: 8px;
+      height: 8px;
+      border-radius: 999px;
+      background: var(--accent);
+    }
+    .dot-2w {
+      width: 8px;
+      height: 8px;
+      border-radius: 999px;
+      background: var(--purple);
+    }
+
+    .vehicle-cards {
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(120px, 1fr));
+      gap: 8px;
+      margin-top: 4px;
+    }
+
+    .vehicle-card {
+      position: relative;
+      border-radius: 12px;
+      padding: 6px 8px;
+      background: radial-gradient(circle at top, rgba(15, 23, 42, 0.8), rgba(15, 23, 42, 0.98));
+      border: 1px solid rgba(51, 65, 85, 0.9);
+      overflow: hidden;
+      font-size: 0.78rem;
+      display: flex;
+      flex-direction: column;
+      gap: 4px;
+      animation: pulseVehicle 1.6s ease-out;
+    }
+
+    .vehicle-card.car {
+      border-color: rgba(14, 165, 233, 0.8);
+      box-shadow: 0 0 18px rgba(14, 165, 233, 0.25);
+    }
+    .vehicle-card.w3 {
+      border-color: rgba(34, 197, 94, 0.8);
+      box-shadow: 0 0 18px rgba(34, 197, 94, 0.25);
+    }
+    .vehicle-card.w2 {
+      border-color: rgba(168, 85, 247, 0.8);
+      box-shadow: 0 0 18px rgba(168, 85, 247, 0.3);
+    }
+
+    @keyframes pulseVehicle {
+      0% { transform: scale(0.96); opacity: 0; }
+      60% { transform: scale(1.02); opacity: 1; }
+      100% { transform: scale(1.0); opacity: 1; }
+    }
+
+    .vehicle-id {
+      font-size: 0.7rem;
+      text-transform: uppercase;
+      letter-spacing: 0.12em;
+      color: var(--text-muted);
+    }
+    .vehicle-main {
+      display: flex;
+      justify-content: space-between;
+      align-items: baseline;
+      gap: 4px;
+    }
+    .vehicle-type {
+      font-weight: 600;
+    }
+    .vehicle-power {
+      font-size: 0.95rem;
+      font-weight: 600;
+      color: var(--accent);
+    }
+    .vehicle-power span.unit {
+      font-size: 0.7rem;
+      color: var(--text-muted);
+      margin-left: 2px;
+    }
+    .vehicle-foot {
+      font-size: 0.7rem;
+      color: var(--text-muted);
+      display: flex;
+      justify-content: space-between;
+    }
+
+    /* Tape */
+    .tape {
+      background: radial-gradient(circle at top, rgba(15, 23, 42, 0.5), rgba(15, 23, 42, 0.98));
+      border-radius: 14px;
+      padding: 10px 12px;
+      border: 1px solid rgba(51, 65, 85, 0.7);
+      display: flex;
+      flex-direction: column;
+      gap: 6px;
+      font-size: 0.78rem;
+      min-height: 220px;
+    }
+
+    .tape-row {
+      display: flex;
+      justify-content: space-between;
+      align-items: baseline;
+      padding: 4px 0;
+      border-bottom: 1px solid rgba(30, 41, 59, 0.7);
+    }
+
+    .tape-row:last-child {
+      border-bottom: none;
+    }
+
+    .tape-time {
+      font-family: "SF Mono", Menlo, ui-monospace, monospace;
+      font-size: 0.7rem;
+      color: var(--text-muted);
+      margin-right: 8px;
+    }
+    .tape-msg {
+      flex: 1;
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+    }
+    .tape-kind-in {
+      color: var(--accent);
+    }
+    .tape-kind-out {
+      color: var(--danger);
+    }
+
+    footer {
+      margin-top: 10px;
+      font-size: 0.7rem;
+      color: var(--text-muted);
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      gap: 8px;
+      flex-wrap: wrap;
+    }
   </style>
 </head>
 <body>
-<div class="wrap">
-  <div class="card">
-    <div class="top">
-      <div>
-        <h1>DeGen Energy Terminal - Mark1 (API)</h1>
-        <div class="hint">Frontend polls an API for state. Simulation lives server-side.</div>
+  <div class="shell">
+    <header>
+      <div class="brand">
+        <div class="brand-title">
+          <span class="brand-dot"></span>
+          DeCharge DeGen Energy Terminal
+          <span class="brand-pill">Mark1</span>
+        </div>
+        <div class="brand-sub">
+          Live simulated EV energy + revenue feed for the DeCharge network.
+        </div>
       </div>
+      <div class="header-right">
+        <div class="badge degen">
+          <span class="key">Mode</span>
+          <span class="value" id="modeLabel">office</span>
+        </div>
+        <div class="badge">
+          <span class="key">Sim Time</span>
+          <span class="value" id="simTime">00:00:00</span>
+        </div>
+        <div class="badge">
+          <span class="key">Sessions / Min</span>
+          <span class="value" id="arrivalsPerMin">0.00</span>
+        </div>
+        <div class="badge">
+          <span class="key">Corr</span>
+          <span class="value" id="corrValue">0.00</span>
+        </div>
+      </div>
+    </header>
 
-      <div class="kpis">
-        <div class="kpi">
-          <div class="label">Simulated Time</div>
-          <div class="value mono" id="timeTxt">00:00:00</div>
-          <div class="sub">24h loop</div>
+    <!-- Top metrics row -->
+    <div class="card">
+      <div class="metrics-row">
+        <div class="metric-tile">
+          <div class="metric-label">Network Load</div>
+          <div class="metric-value metric-highlight" id="totalKW">0.0 kW</div>
+          <div class="metric-sub">Instantaneous charging power</div>
         </div>
-        <div class="kpi">
-          <div class="label">Active Plugged Vehicles</div>
-          <div class="value mono" id="vehTxt">0</div>
-          <div class="sub mono" id="arrTxt">Arrivals/min: 0.00</div>
+        <div class="metric-tile">
+          <div class="metric-label">Energy Dispensed (Sim Day)</div>
+          <div class="metric-value" id="energyKWh">0.00 MWh</div>
+          <div class="metric-sub">Target: <span id="targetKWh">0.0</span> kWh</div>
         </div>
-        <div class="kpi">
-          <div class="label">Instant Power</div>
-          <div class="value mono" id="pwrTxt">0.00 kW</div>
-          <div class="sub mono" id="pwrSub">0 W</div>
+        <div class="metric-tile">
+          <div class="metric-label">Active Vehicles</div>
+          <div class="metric-value" id="activeVehicles">0</div>
+          <div class="metric-sub">Simulated plugs currently drawing power</div>
         </div>
-        <div class="kpi">
-          <div class="label">Energy Consumed</div>
-          <div class="value mono" id="engTxt">0.00 kWh</div>
-          <div class="sub mono" id="tgtTxt">Target: 1500.00 kWh</div>
-          <div class="bar"><div id="prog"></div></div>
+        <div class="metric-tile">
+          <div class="metric-label">Utilisation Signal</div>
+          <div class="metric-value" id="utilisationStatus">Calibrating…</div>
+          <div class="metric-sub">Based on occupancy ↔ power correlation</div>
         </div>
       </div>
     </div>
 
-    <div class="grid">
-      <div class="panel">
-        <div class="panelTitle"><span>Total Power (kW)</span><span class="mono" id="lastPrice">last: 0.00</span></div>
-        <canvas id="cPower"></canvas>
+    <div class="grid" style="margin-top: 14px;">
+      <!-- Left: chart + vehicles -->
+      <div class="card">
+        <div class="card-header">
+          <div class="card-title">Network Power & Occupancy</div>
+          <div class="pill primary">Live Feed</div>
+        </div>
+        <canvas id="powerChart"></canvas>
       </div>
-      <div class="panel">
-        <div class="panelTitle"><span>Active Vehicles</span><span class="mono" id="lastOI">last: 0</span></div>
-        <canvas id="cOI"></canvas>
-      </div>
-      <div class="panel">
-        <div class="panelTitle"><span>Correlation: Vehicles vs kW</span><span class="mono" id="corrTxt">ρ: 0.00</span></div>
-        <canvas id="cCorr"></canvas>
-      </div>
-      <div class="panel">
-        <div class="panelTitle"><span>Top Sessions (kW)</span><span class="mono" id="topTxt">top: 0.00</span></div>
-        <canvas id="cTop"></canvas>
-      </div>
-    </div>
 
-    <div class="bottom">
-      <div class="controls">
-        <div class="row">
-          <div class="field">
-            <label>API Base URL</label>
-            <input id="apiBase" value="https://dtermnal.onrender.com/" />
-            <div class="hint">Change this if you deploy the API.</div>
-          </div>
-          <div class="field">
-            <label>Display</label>
-            <select id="unitMode">
-              <option value="kw" selected>kW (and W)</option>
-              <option value="w">W only</option>
-            </select>
-            <div class="hint">Charts are in kW.</div>
-          </div>
+      <!-- Right: revenue panel -->
+      <div class="card">
+        <div class="card-header">
+          <div class="card-title">Network Revenue</div>
+          <div class="pill accent">$0.004 / kWh · 20% protocol</div>
         </div>
 
-        <div class="row">
-          <div class="field">
-            <label>Poll interval</label>
-            <select id="pollMs">
-              <option value="100">100 ms</option>
-              <option value="200" selected>200 ms</option>
-              <option value="500">500 ms</option>
-              <option value="1000">1000 ms</option>
-            </select>
-            <div class="hint">Frontend refresh speed.</div>
+        <div class="revenue-grid">
+          <div class="rev-main">
+            <div class="rev-main-title">Revenue in Last 60 Seconds (sim)</div>
+            <div class="rev-main-value">
+              $<span id="revLast60">0.00</span>
+            </div>
+            <div class="rev-main-sub">
+              Protocol fees:
+              <span style="color: var(--accent); font-weight: 600;">
+                $<span id="revLast60Protocol">0.00</span>
+              </span>
+            </div>
+            <div class="rev-split">
+              <div class="rev-chip">
+                <span>To Hosts + LPs</span>
+                <span class="value">$<span id="revLast60Hosts">0.00</span></span>
+              </div>
+              <div class="rev-chip">
+                <span>To Protocol</span>
+                <span class="value">$<span id="revLast60ProtocolChip">0.00</span></span>
+              </div>
+            </div>
           </div>
-          <div class="field">
-            <label>Quick actions</label>
-            <div class="row" style="grid-template-columns:1fr 1fr; margin-top:6px;">
-              <button id="restart">Restart day</button>
-              <button id="pause">Pause</button>
+          <div class="rev-side">
+            <div class="rev-side-title">Cumulative Margins</div>
+            <div class="rev-side-row">
+              <span>Total Margin (All Time)</span>
+              <span class="value">$<span id="revLifetime">0.00</span></span>
+            </div>
+            <div class="rev-side-row">
+              <span>Protocol Fees (All Time)</span>
+              <span class="value">$<span id="revLifetimeProtocol">0.00</span></span>
+            </div>
+            <div class="rev-side-row" style="margin-top: 4px;">
+              <span style="color: var(--text-muted);">Est. Daily at Current Rate</span>
+              <span class="value">$<span id="revDailyAtRate">0.00</span></span>
             </div>
           </div>
         </div>
-
-        <div class="hint">To change simulation settings, POST to /api/config in the backend (or ask me and I’ll add UI controls here).</div>
       </div>
 
-      <div class="panel">
-        <div class="panelTitle"><span>Live tape</span><span class="mono" id="tapeHead">events</span></div>
-        <div class="tape" id="tape"></div>
+      <!-- Bottom left: Vehicles -->
+      <div class="card">
+        <div class="card-header">
+          <div class="card-title">Vehicle Flow · Top Active Sessions</div>
+          <div class="pill">Plug / Unplug Animation</div>
+        </div>
+
+        <div class="vehicles-grid">
+          <div class="vehicle-wall">
+            <div class="vehicle-wall-header">
+              <span>Currently plugged sessions (top power draw)</span>
+              <div class="vehicle-counts">
+                <span><span class="dot-car"></span> Cars</span>
+                <span><span class="dot-3w"></span> 3-Wheelers</span>
+                <span><span class="dot-2w"></span> 2-Wheelers</span>
+              </div>
+            </div>
+            <div class="vehicle-cards" id="vehicleCards">
+              <!-- filled by JS -->
+            </div>
+          </div>
+
+          <div class="tape">
+            <div style="display:flex;justify-content:space-between;align-items:center;">
+              <span style="text-transform:uppercase;letter-spacing:0.14em;color:var(--text-muted);font-size:0.72rem;">
+                Event Tape
+              </span>
+              <span style="font-size:0.7rem;color:var(--text-muted);">Most recent plug / unplug events</span>
+            </div>
+            <div id="eventTape">
+              <!-- JS fills -->
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Bottom right: (optional future panel, keep for symmetry) -->
+      <div class="card">
+        <div class="card-header">
+          <div class="card-title">Network Intelligence</div>
+          <div class="pill">Signals</div>
+        </div>
+        <div style="font-size:0.8rem;color:var(--text-muted);display:flex;flex-direction:column;gap:6px;">
+          <div>
+            <strong style="color:var(--primary);">Power ↔ Occupancy Correlation</strong><br />
+            <span id="corrNarrative">Waiting for signal…</span>
+          </div>
+          <div>
+            <strong style="color:var(--accent);">Arrival Regime</strong><br />
+            <span id="arrivalNarrative">Calibrating EV flow across the 24h sim day.</span>
+          </div>
+          <div>
+            <strong style="color:var(--purple);">Narrative</strong><br />
+            <span>
+              Every glowing node above is a vehicle drawing power from the DeCharge network.
+              Margin flows in real time, with 20% siphoned into long-term protocol value.
+            </span>
+          </div>
+        </div>
       </div>
     </div>
+
+    <footer>
+      <span>Powered by DeCharge · DeGen Energy Terminal · Mark1</span>
+      <span style="color:var(--text-muted);font-size:0.7rem;">
+        Data simulated on backend, shared globally via Redis snapshot.
+      </span>
+    </footer>
   </div>
-</div>
 
-<script>
-  const clamp = (x,a,b)=>Math.max(a,Math.min(b,x));
+  <script>
+    // CHANGE THIS for your deployment
+    const API_BASE = "https://degen-terminal.onrender.com";
 
-  // DOM
-  const timeTxt = document.getElementById("timeTxt");
-  const vehTxt  = document.getElementById("vehTxt");
-  const arrTxt  = document.getElementById("arrTxt");
-  const pwrTxt  = document.getElementById("pwrTxt");
-  const pwrSub  = document.getElementById("pwrSub");
-  const engTxt  = document.getElementById("engTxt");
-  const tgtTxt  = document.getElementById("tgtTxt");
-  const prog    = document.getElementById("prog");
+    let powerChart = null;
 
-  const lastPrice = document.getElementById("lastPrice");
-  const lastOI = document.getElementById("lastOI");
-  const corrTxt = document.getElementById("corrTxt");
-  const topTxt = document.getElementById("topTxt");
-
-  const apiBaseEl = document.getElementById("apiBase");
-  const unitModeEl = document.getElementById("unitMode");
-  const pollMsEl = document.getElementById("pollMs");
-  const restartBtn = document.getElementById("restart");
-  const pauseBtn = document.getElementById("pause");
-  const tapeEl = document.getElementById("tape");
-
-  // canvases
-  const cPower = document.getElementById("cPower");
-  const cOI = document.getElementById("cOI");
-  const cCorr = document.getElementById("cCorr");
-  const cTop = document.getElementById("cTop");
-  const ctxP = cPower.getContext("2d");
-  const ctxO = cOI.getContext("2d");
-  const ctxC = cCorr.getContext("2d");
-  const ctxT = cTop.getContext("2d");
-
-  // theme comes from API meta.theme
-  let THEME = null;
-
-  function fitCanvas(canvas){
-    const dpr = window.devicePixelRatio || 1;
-    const rect = canvas.getBoundingClientRect();
-    const w = Math.floor(rect.width * dpr);
-    const h = Math.floor(rect.height * dpr);
-    if (canvas.width !== w || canvas.height !== h){ canvas.width = w; canvas.height = h; }
-    return { w, h, dpr };
-  }
-
-  function drawLineChart(ctx, canvas, ys, labelRight, palette){
-    const { w, h, dpr } = fitCanvas(canvas);
-    ctx.clearRect(0,0,w,h);
-
-    const padL = 42*dpr, padR = 12*dpr, padT = 10*dpr, padB = 18*dpr;
-    const cw = w - padL - padR, ch = h - padT - padB;
-    if (!ys || ys.length < 2) return;
-
-    let ymin = Infinity, ymax = -Infinity;
-    for (const v of ys){ ymin=Math.min(ymin,v); ymax=Math.max(ymax,v); }
-    const pad = (ymax-ymin)*0.12 || 1;
-    ymin -= pad; ymax += pad;
-
-    const yTo = (v)=> padT + (1 - (v-ymin)/(ymax-ymin)) * ch;
-    const xTo = (i)=> padL + (i/Math.max(1, ys.length-1)) * cw;
-
-    // grid
-    ctx.save();
-    ctx.strokeStyle = THEME.bgGrid;
-    ctx.lineWidth = 1;
-    for(let i=1;i<=5;i++){
-      const y = padT + (i/6)*ch;
-      ctx.beginPath(); ctx.moveTo(padL,y); ctx.lineTo(padL+cw,y); ctx.stroke();
-    }
-    for(let i=1;i<=8;i++){
-      const x = padL + (i/9)*cw;
-      ctx.beginPath(); ctx.moveTo(x,padT); ctx.lineTo(x,padT+ch); ctx.stroke();
-    }
-    ctx.restore();
-
-    // line
-    ctx.save();
-    ctx.strokeStyle = palette.line;
-    ctx.lineWidth = 2*dpr;
-    ctx.beginPath();
-    for(let i=0;i<ys.length;i++){
-      const x=xTo(i), y=yTo(ys[i]);
-      if(i===0) ctx.moveTo(x,y); else ctx.lineTo(x,y);
-    }
-    ctx.stroke();
-
-    // last marker and dash
-    const ly = yTo(ys[ys.length-1]);
-    ctx.fillStyle = "rgba(255,255,255,0.92)";
-    ctx.beginPath(); ctx.arc(padL+cw, ly, 3.5*dpr, 0, Math.PI*2); ctx.fill();
-
-    ctx.strokeStyle = palette.dash;
-    ctx.setLineDash([6*dpr,6*dpr]);
-    ctx.beginPath(); ctx.moveTo(padL, ly); ctx.lineTo(padL+cw, ly); ctx.stroke();
-    ctx.setLineDash([]);
-    ctx.restore();
-
-    ctx.save();
-    ctx.fillStyle = THEME.text;
-    ctx.font = `${12*dpr}px ui-monospace, Menlo, Consolas, monospace`;
-    ctx.fillText(labelRight, padL, 12*dpr);
-    ctx.restore();
-  }
-
-  function drawScatter(ctx, canvas, xs, ys, rho){
-    const { w, h, dpr } = fitCanvas(canvas);
-    ctx.clearRect(0,0,w,h);
-
-    const pad = 14*dpr;
-    const cw = w - 2*pad, ch = h - 2*pad;
-    if (!xs || xs.length < 2) return;
-
-    let xmin = Math.min(...xs), xmax = Math.max(...xs);
-    let ymin = Math.min(...ys), ymax = Math.max(...ys);
-    xmin = Math.floor(xmin); xmax = Math.ceil(xmax);
-    const ypad = (ymax-ymin)*0.12 || 1;
-    ymin -= ypad; ymax += ypad;
-
-    const xTo = (v)=> pad + ((v-xmin)/Math.max(1e-6,(xmax-xmin))) * cw;
-    const yTo = (v)=> pad + (1 - (v-ymin)/Math.max(1e-6,(ymax-ymin))) * ch;
-
-    ctx.save();
-    ctx.strokeStyle=THEME.bgGrid; ctx.lineWidth=1;
-    for(let i=1;i<=6;i++){
-      const x = pad + (i/7)*cw;
-      ctx.beginPath(); ctx.moveTo(x,pad); ctx.lineTo(x,pad+ch); ctx.stroke();
-      const y = pad + (i/7)*ch;
-      ctx.beginPath(); ctx.moveTo(pad,y); ctx.lineTo(pad+cw,y); ctx.stroke();
-    }
-    ctx.restore();
-
-    ctx.save();
-    for(let i=0;i<xs.length;i++){
-      const a = (i+1)/xs.length;
-      ctx.fillStyle = `rgba(185, 120, 255, ${0.06 + 0.70*a})`;
-      ctx.beginPath(); ctx.arc(xTo(xs[i]), yTo(ys[i]), (2.5 + 2.0*a)*dpr, 0, Math.PI*2); ctx.fill();
-    }
-    const lx = xTo(xs[xs.length-1]);
-    const ly = yTo(ys[ys.length-1]);
-    ctx.fillStyle="rgba(255,255,255,0.92)";
-    ctx.beginPath(); ctx.arc(lx, ly, 3.8*dpr, 0, Math.PI*2); ctx.fill();
-    ctx.restore();
-
-    ctx.save();
-    ctx.fillStyle=THEME.text;
-    ctx.font = `${12*dpr}px ui-monospace, Menlo, Consolas, monospace`;
-    ctx.fillText(`ρ ${Number(rho).toFixed(2)}`, pad, 14*dpr);
-    ctx.restore();
-  }
-
-  function drawTopBars(ctx, canvas, top){
-    const { w, h, dpr } = fitCanvas(canvas);
-    ctx.clearRect(0,0,w,h);
-
-    const pad = 14*dpr;
-    const cw = w - 2*pad, ch = h - 2*pad;
-    if (!top || !top.length) return;
-
-    const vals = top.map(x=>x.p);
-    const max = Math.max(...vals, 1e-6);
-    const n = top.length;
-    const gap = 6*dpr;
-    const bw = (cw - gap*(n-1)) / n;
-
-    ctx.save();
-    ctx.strokeStyle=THEME.bgGrid; ctx.lineWidth=1;
-    for(let i=1;i<=5;i++){
-      const y = pad + (i/6)*ch;
-      ctx.beginPath(); ctx.moveTo(pad,y); ctx.lineTo(pad+cw,y); ctx.stroke();
-    }
-    ctx.restore();
-
-    for(let i=0;i<n;i++){
-      const x = pad + i*(bw+gap);
-      const v = top[i].p;
-      const bh = (v/max)*ch;
-      const y = pad + (ch - bh);
-
-      ctx.save();
-      ctx.fillStyle = THEME.topBarFill;
-      ctx.strokeStyle = THEME.topBarStroke;
-      ctx.lineWidth = 1*dpr;
-      ctx.beginPath(); ctx.rect(x, y, bw, bh); ctx.fill(); ctx.stroke();
-      ctx.fillStyle = THEME.text;
-      ctx.font = `${11*dpr}px ui-monospace, Menlo, Consolas, monospace`;
-      ctx.fillText(v.toFixed(1), x, y - 4*dpr);
-      ctx.restore();
-    }
-  }
-
-  function renderTape(tape){
-    tapeEl.innerHTML = (tape || []).map(x=>{
-      const cls = x.kind === "in" ? "green" : "red";
-      return `<div class="tline ${cls}">
-        <div class="tleft">${x.msg}</div>
-        <div class="tright">${x.t}</div>
-      </div>`;
-    }).join("");
-  }
-
-  async function post(path, body){
-    const base = apiBaseEl.value.trim().replace(/\/$/, "");
-    const res = await fetch(base + path, {
-      method: "POST",
-      headers: { "Content-Type":"application/json" },
-      body: body === undefined ? undefined : JSON.stringify(body)
-    });
-    if (!res.ok) throw new Error(`POST ${path} failed`);
-    return res.json();
-  }
-
-  let pollTimer = null;
-  let paused = false;
-
-  async function poll(){
-    const base = apiBaseEl.value.trim().replace(/\/$/, "");
-    const res = await fetch(base + "/api/state");
-    const data = await res.json();
-
-    THEME = data.meta?.theme || THEME;
-    const now = data.now;
-    const series = data.series;
-
-    timeTxt.textContent = now.simTime;
-    vehTxt.textContent = String(now.activeVehicles);
-    arrTxt.textContent = `Arrivals/min: ${Number(now.arrivalsPerMin).toFixed(2)}`;
-
-    const mode = unitModeEl.value;
-    if (mode === "w"){
-      pwrTxt.textContent = `${Math.round(now.totalKW*1000)} W`;
-      pwrSub.textContent = `${Number(now.totalKW).toFixed(2)} kW`;
-    } else {
-      pwrTxt.textContent = `${Number(now.totalKW).toFixed(2)} kW`;
-      pwrSub.textContent = `${Math.round(now.totalKW*1000)} W`;
+    function formatNumber(value, decimals = 2) {
+      if (isNaN(value)) return "0.00";
+      return Number(value).toFixed(decimals);
     }
 
-    engTxt.textContent = `${Number(now.energyKWh).toFixed(2)} kWh`;
-    tgtTxt.textContent = `Target: ${Number(now.targetKWh).toFixed(2)} kWh`;
-    const pct = clamp((now.energyKWh / now.targetKWh) * 100, 0, 100);
-    prog.style.width = `${pct}%`;
+    function initChart() {
+      const ctx = document.getElementById("powerChart").getContext("2d");
+      powerChart = new Chart(ctx, {
+        type: "line",
+        data: {
+          labels: [],
+          datasets: [
+            {
+              label: "Power (kW)",
+              data: [],
+              borderColor: "#0ea5e9",
+              backgroundColor: "rgba(14,165,233,0.12)",
+              borderWidth: 2,
+              tension: 0.25,
+              yAxisID: "y1",
+            },
+            {
+              label: "Active Vehicles",
+              data: [],
+              borderColor: "#22c55e",
+              backgroundColor: "rgba(34,197,94,0.12)",
+              borderWidth: 1.5,
+              borderDash: [4, 3],
+              tension: 0.25,
+              yAxisID: "y2",
+            },
+          ],
+        },
+        options: {
+          responsive: true,
+          maintainAspectRatio: false,
+          scales: {
+            x: {
+              ticks: {
+                color: "rgba(148,163,184,0.9)",
+                autoSkip: true,
+                maxTicksLimit: 8,
+              },
+              grid: {
+                color: "rgba(30,64,175,0.4)",
+              },
+            },
+            y1: {
+              position: "left",
+              ticks: {
+                color: "#0ea5e9",
+              },
+              grid: {
+                color: "rgba(30,64,175,0.35)",
+              },
+            },
+            y2: {
+              position: "right",
+              ticks: {
+                color: "#22c55e",
+              },
+              grid: {
+                drawOnChartArea: false,
+              },
+            },
+          },
+          plugins: {
+            legend: {
+              labels: {
+                color: "rgba(209,213,219,0.9)",
+              },
+            },
+          },
+        },
+      });
+    }
 
-    lastPrice.textContent = `last: ${Number(now.totalKW).toFixed(2)}`;
-    lastOI.textContent = `last: ${now.activeVehicles}`;
-    corrTxt.textContent = `ρ: ${Number(now.corr).toFixed(2)}`;
+    function updateChart(series, now) {
+      if (!powerChart) return;
+      const t = series.t || [];
+      const pkw = series.pkw || [];
+      const oi = series.oi || [];
 
-    const top = data.top || [];
-    topTxt.textContent = `top: ${(top[0]?.p || 0).toFixed(2)}`;
+      powerChart.data.labels = t.map((v) => {
+        // simple label: simulated minute
+        return v.toFixed(0) + "m";
+      });
+      powerChart.data.datasets[0].data = pkw;
+      powerChart.data.datasets[1].data = oi;
+      powerChart.update("none");
+    }
 
-    drawLineChart(ctxP, cPower, series.pkw, "kW", { line: THEME.powerLine, dash: THEME.powerDash });
-    drawLineChart(ctxO, cOI, series.oi,  "vehicles", { line: THEME.oiLine, dash: THEME.oiDash });
+    function updateVehicles(top, now) {
+      const container = document.getElementById("vehicleCards");
+      container.innerHTML = "";
 
-    const xs = (series.oi || []).slice(-220);
-    const ys = (series.pkw || []).slice(-220);
-    drawScatter(ctxC, cCorr, xs, ys, now.corr);
-    drawTopBars(ctxT, cTop, top);
+      if (!Array.isArray(top) || top.length === 0) {
+        container.innerHTML =
+          '<div style="font-size:0.8rem;color:var(--text-muted);opacity:0.8;">No active sessions right now. Waiting for the next wave of DeGens to plug in…</div>';
+        return;
+      }
 
-    renderTape(data.tape);
-  }
+      top.forEach((s) => {
+        const card = document.createElement("div");
+        const vtype = (s.vtype || "").toLowerCase();
+        let cls = "vehicle-card ";
+        if (vtype === "car") cls += "car";
+        else if (vtype === "3w") cls += "w3";
+        else cls += "w2";
 
-  function startPolling(){
-    if (pollTimer) clearInterval(pollTimer);
-    pollTimer = setInterval(()=>poll().catch(()=>{}), Number(pollMsEl.value));
-  }
+        card.className = cls;
 
-  restartBtn.addEventListener("click", ()=>post("/api/restart").catch(()=>{}));
-  pauseBtn.addEventListener("click", async ()=>{
-    paused = !paused;
-    pauseBtn.textContent = paused ? "Resume" : "Pause";
-    await post("/api/pause", paused);
-  });
+        const power = s.p || 0;
+        const id = s.id;
 
-  pollMsEl.addEventListener("change", startPolling);
-  unitModeEl.addEventListener("change", ()=>poll().catch(()=>{}));
-  window.addEventListener("resize", ()=>poll().catch(()=>{}));
+        card.innerHTML = `
+          <div class="vehicle-id">#${id}</div>
+          <div class="vehicle-main">
+            <div class="vehicle-type">${vtype.toUpperCase()}</div>
+            <div class="vehicle-power">
+              ${power.toFixed(1)}<span class="unit">kW</span>
+            </div>
+          </div>
+          <div class="vehicle-foot">
+            <span>Plugged</span>
+            <span>${now.simTime}</span>
+          </div>
+        `;
+        container.appendChild(card);
+      });
+    }
 
-  // start
-  startPolling();
-  poll().catch(()=>{});
-</script>
+    function updateTape(tape) {
+      const container = document.getElementById("eventTape");
+      container.innerHTML = "";
+
+      if (!Array.isArray(tape) || tape.length === 0) {
+        container.innerHTML =
+          '<div style="font-size:0.78rem;color:var(--text-muted);opacity:0.8;">No recent events.</div>';
+        return;
+      }
+
+      tape.slice(0, 12).forEach((entry) => {
+        const row = document.createElement("div");
+        row.className = "tape-row";
+
+        const kind = entry.kind || "";
+        const msg = entry.msg || "";
+        const t = entry.t || "";
+
+        const msgSpan = document.createElement("span");
+        msgSpan.className = "tape-msg";
+        if (kind === "in") msgSpan.classList.add("tape-kind-in");
+        if (kind === "out") msgSpan.classList.add("tape-kind-out");
+        msgSpan.textContent = msg;
+
+        row.innerHTML = `<span class="tape-time">${t}</span>`;
+        row.appendChild(msgSpan);
+        container.appendChild(row);
+      });
+    }
+
+    function updateRevenue(rev, now) {
+      if (!rev) rev = {};
+      const last60 = rev.last60sUSD || 0;
+      const last60Prot = rev.last60sProtocolUSD || 0;
+      const lifetime = rev.lifetimeUSD || 0;
+      const lifetimeProt = rev.lifetimeProtocolUSD || 0;
+
+      document.getElementById("revLast60").textContent = formatNumber(last60, 4);
+      document.getElementById("revLast60Protocol").textContent = formatNumber(last60Prot, 4);
+      document.getElementById("revLast60ProtocolChip").textContent = formatNumber(last60Prot, 4);
+      document.getElementById("revLast60Hosts").textContent = formatNumber(last60 - last60Prot, 4);
+
+      document.getElementById("revLifetime").textContent = formatNumber(lifetime, 2);
+      document.getElementById("revLifetimeProtocol").textContent = formatNumber(lifetimeProt, 2);
+
+      // very rough daily projection at current last60s rate
+      const dailyEst = last60 * 60 * 24;
+      document.getElementById("revDailyAtRate").textContent = formatNumber(dailyEst, 2);
+    }
+
+    function updateMeta(now, cfg, revenue) {
+      document.getElementById("modeLabel").textContent = cfg.mode || "office";
+      document.getElementById("simTime").textContent = now.simTime || "00:00:00";
+      document.getElementById("arrivalsPerMin").textContent = formatNumber(now.arrivalsPerMin || 0, 2);
+      document.getElementById("corrValue").textContent = formatNumber(now.corr || 0, 2);
+
+      // metrics
+      document.getElementById("totalKW").textContent = formatNumber(now.totalKW || 0, 1) + " kW";
+
+      const energyKWh = now.energyKWh || 0;
+      const energyMWh = energyKWh / 1000.0;
+      document.getElementById("energyKWh").textContent = formatNumber(energyMWh, 3) + " MWh";
+      document.getElementById("targetKWh").textContent = formatNumber(now.targetKWh || 0, 0);
+
+      document.getElementById("activeVehicles").textContent = now.activeVehicles || 0;
+
+      const corr = now.corr || 0;
+      const utilEl = document.getElementById("utilisationStatus");
+      const corrNarr = document.getElementById("corrNarrative");
+      if (corr > 0.7) {
+        utilEl.textContent = "Highly Coupled";
+        utilEl.style.color = "var(--accent)";
+        corrNarr.textContent =
+          "When occupancy spikes, power spikes. The network is behaving like a tightly tuned energy market.";
+      } else if (corr > 0.3) {
+        utilEl.textContent = "Moderately Coupled";
+        utilEl.style.color = "var(--primary)";
+        corrNarr.textContent =
+          "Demand and power are correlated, but there’s still slack. Good regime for price experiments.";
+      } else if (corr < -0.2) {
+        utilEl.textContent = "Inverted";
+        utilEl.style.color = "var(--danger)";
+        corrNarr.textContent =
+          "Occupancy and power are moving in opposite directions. Something weird is happening – a true DeGen edge case.";
+      } else {
+        utilEl.textContent = "Noisy / Neutral";
+        utilEl.style.color = "var(--text-muted)";
+        corrNarr.textContent =
+          "Power isn’t strongly tied to active plugs yet. Early in the sim day or a low-traffic region.";
+      }
+    }
+
+    async function fetchState() {
+      try {
+        const res = await fetch(`${API_BASE}/api/state`);
+        if (!res.ok) throw new Error("API error");
+        const data = await res.json();
+
+        const now = data.now || {};
+        const cfg = data.config || {};
+        const series = data.series || {};
+        const top = data.top || [];
+        const tape = data.tape || [];
+        const revenue = data.revenue || {};
+
+        updateMeta(now, cfg, revenue);
+        updateChart(series, now);
+        updateVehicles(top, now);
+        updateTape(tape);
+        updateRevenue(revenue, now);
+      } catch (err) {
+        console.error("fetchState failed", err);
+      }
+    }
+
+    // init
+    initChart();
+    fetchState();
+    setInterval(fetchState, 1000);
+  </script>
 </body>
 </html>

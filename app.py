@@ -253,7 +253,7 @@ class Engine:
         )
 
         # revenue
-        last60s_rev = totalKW * MARGIN_PER_KWH / 60.0
+        last60s_rev = totalKW * MARGIN_PER_KWH 
         lifetime_protocol = self.lifetimeRevenueUSD * PROTOCOL_FEE_SHARE
 
         # top consumers

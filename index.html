@@ -5,215 +5,690 @@
   <title>DeCharge DeGen Energy Terminal – Mark1</title>
   <meta name="viewport" content="width=device-width, initial-scale=1" />
 
+  <!-- Chart.js -->
   <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
 
   <style>
     :root{
-      --bg:#020617;
-      --bg-elevated:rgba(15,23,42,.96);
-      --border-soft:rgba(148,163,184,.35);
-      --primary:#0ea5e9;
-      --primary-soft:rgba(14,165,233,.18);
-      --accent:#22c55e;
-      --accent-soft:rgba(34,197,94,.16);
+      /* DeCharge-ish neon / glass */
+      --bg0:#020617;
+      --bg1:#050b1d;
+      --glass: rgba(12, 18, 40, 0.55);
+      --glass2: rgba(12, 18, 40, 0.35);
+      --border: rgba(148,163,184,0.22);
+      --border2: rgba(148,163,184,0.14);
+
+      --text:#e5e7eb;
+      --muted: rgba(229,231,235,0.68);
+
+      --blue:#19b7ff;      /* neon cyan-blue */
+      --blue2:#0ea5e9;
+      --green:#22c55e;
       --purple:#a855f7;
-      --text-main:#e5e7eb;
-      --text-muted:#9ca3af;
-      --danger:#f97373;
-      --card-radius:18px;
+      --amber:#fbbf24;
+      --red:#fb7185;
+
+      --glow-blue: 0 0 22px rgba(25,183,255,0.35), 0 0 50px rgba(25,183,255,0.18);
+      --glow-green: 0 0 22px rgba(34,197,94,0.35), 0 0 50px rgba(34,197,94,0.18);
+      --glow-purple: 0 0 22px rgba(168,85,247,0.35), 0 0 50px rgba(168,85,247,0.18);
+
+      --r: 18px;
+      --r2: 14px;
+
+      --mono: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", monospace;
     }
 
-    *{box-sizing:border-box}
+    * { box-sizing: border-box; }
+
     body{
-      margin:0; padding:0;
-      font-family:system-ui,-apple-system,BlinkMacSystemFont,"SF Pro Text",sans-serif;
+      margin:0;
+      font-family: system-ui, -apple-system, BlinkMacSystemFont, "SF Pro Text", sans-serif;
+      color: var(--text);
       background:
-        radial-gradient(circle at top left, rgba(56,189,248,.15), transparent 55%),
-        radial-gradient(circle at top right, rgba(129,140,248,.18), transparent 55%),
-        radial-gradient(circle at bottom, rgba(34,197,94,.12), transparent 55%),
-        var(--bg);
-      color:var(--text-main);
+        radial-gradient(circle at 18% 18%, rgba(25,183,255,0.16), transparent 52%),
+        radial-gradient(circle at 82% 18%, rgba(168,85,247,0.14), transparent 54%),
+        radial-gradient(circle at 60% 92%, rgba(34,197,94,0.10), transparent 52%),
+        radial-gradient(circle at 12% 86%, rgba(251,191,36,0.08), transparent 55%),
+        linear-gradient(180deg, var(--bg1), var(--bg0));
       min-height:100vh;
+      overflow-x: hidden;
     }
 
-    .shell{max-width:1400px;margin:0 auto;padding:20px 20px 32px}
+    .shell{
+      max-width: 1440px;
+      margin: 0 auto;
+      padding: 18px 18px 28px;
+    }
 
     header{
-      display:flex; align-items:center; justify-content:space-between;
-      margin-bottom:18px; gap:16px;
+      display:flex;
+      justify-content: space-between;
+      align-items: flex-end;
+      gap: 14px;
+      flex-wrap: wrap;
+      margin-bottom: 14px;
     }
 
-    .brand{display:flex;flex-direction:column;gap:4px}
-    .brand-title{
-      font-size:1.4rem;font-weight:700;letter-spacing:.06em;text-transform:uppercase;
-      display:inline-flex;align-items:center;gap:8px;
+    .brand{
+      display:flex;
+      flex-direction: column;
+      gap: 6px;
     }
-    .brand-pill{
-      font-size:.75rem;padding:2px 8px;border-radius:999px;
-      border:1px solid rgba(148,163,184,.5);
-      text-transform:uppercase;letter-spacing:.08em;color:var(--text-muted);
-    }
-    .brand-dot{
-      width:10px;height:10px;border-radius:999px;
-      background:radial-gradient(circle at 30% 20%, #e5f9ff, #22c55e);
-      box-shadow:0 0 14px rgba(34,197,94,.85);
-    }
-    .brand-sub{font-size:.9rem;color:var(--text-muted)}
 
-    .header-right{
-      display:flex;gap:10px;align-items:center;flex-wrap:wrap;justify-content:flex-end;
+    .brandTitle{
+      display:flex;
+      align-items:center;
+      gap:10px;
+      font-weight: 800;
+      letter-spacing: .08em;
+      text-transform: uppercase;
+      font-size: 1.15rem;
     }
+
+    .dot{
+      width: 10px; height: 10px; border-radius: 999px;
+      background: radial-gradient(circle at 30% 30%, #e7fbff, var(--green));
+      box-shadow: 0 0 18px rgba(34,197,94,0.75);
+    }
+
+    .pill{
+      font-size: .72rem;
+      padding: 3px 9px;
+      border-radius: 999px;
+      border: 1px solid var(--border);
+      background: rgba(2,6,23,0.35);
+      color: rgba(229,231,235,0.78);
+      text-transform: uppercase;
+      letter-spacing: .12em;
+      white-space: nowrap;
+    }
+
+    .sub{
+      color: var(--muted);
+      font-size: .9rem;
+      line-height: 1.3;
+      max-width: 760px;
+    }
+
+    .badges{
+      display:flex;
+      gap: 10px;
+      flex-wrap: wrap;
+      justify-content: flex-end;
+    }
+
     .badge{
-      padding:6px 10px;border-radius:999px;
-      background:rgba(15,23,42,.9);
-      border:1px solid rgba(148,163,184,.6);
-      font-size:.75rem;display:inline-flex;align-items:center;gap:6px;
+      display:flex;
+      gap: 8px;
+      align-items:center;
+      padding: 7px 10px;
+      border-radius: 999px;
+      border: 1px solid var(--border);
+      background: rgba(2,6,23,0.35);
+      backdrop-filter: blur(14px);
+      -webkit-backdrop-filter: blur(14px);
+      font-size: .78rem;
     }
-    .badge span.key{
-      text-transform:uppercase;letter-spacing:.08em;
-      color:var(--text-muted);font-size:.7rem;
+
+    .k{
+      color: rgba(229,231,235,0.62);
+      text-transform: uppercase;
+      letter-spacing: .14em;
+      font-size: .7rem;
     }
-    .badge span.value{font-weight:600}
-    .badge.degen{
-      border-color:var(--primary);
-      background:linear-gradient(120deg, rgba(15,23,42,.9), rgba(8,47,73,.95));
+
+    .v{
+      font-weight: 700;
+      color: rgba(229,231,235,0.92);
+    }
+
+    .badge.mode{
+      border-color: rgba(25,183,255,0.45);
+      box-shadow: var(--glow-blue);
+    }
+
+    /* Glass card */
+    .card{
+      background: linear-gradient(180deg, var(--glass), rgba(12,18,40,0.45));
+      border: 1px solid var(--border);
+      border-radius: var(--r);
+      box-shadow:
+        0 18px 60px rgba(0,0,0,0.45),
+        0 0 0 1px rgba(2,6,23,0.35);
+      backdrop-filter: blur(18px);
+      -webkit-backdrop-filter: blur(18px);
+      position: relative;
+      overflow: hidden;
+    }
+
+    .card::before{
+      content:"";
+      position:absolute;
+      inset:0;
+      pointer-events:none;
+      background:
+        radial-gradient(circle at 18% 16%, rgba(25,183,255,0.11), transparent 55%),
+        radial-gradient(circle at 82% 22%, rgba(168,85,247,0.10), transparent 58%);
+      opacity: .9;
+    }
+
+    .cardInner{
+      position: relative;
+      z-index: 1;
+      padding: 14px 14px 16px;
+    }
+
+    .cardHead{
+      display:flex;
+      justify-content: space-between;
+      align-items: center;
+      gap: 10px;
+      margin-bottom: 10px;
+    }
+
+    .title{
+      color: rgba(229,231,235,0.68);
+      text-transform: uppercase;
+      letter-spacing: .16em;
+      font-size: .8rem;
     }
 
     .grid{
       display:grid;
-      grid-template-columns:2fr 1.2fr;
-      grid-template-rows:auto auto;
-      gap:16px;
-      margin-top:14px;
-    }
-    @media (max-width:1024px){ .grid{grid-template-columns:1fr;} }
-
-    .card{
-      background:var(--bg-elevated);
-      border-radius:var(--card-radius);
-      border:1px solid var(--border-soft);
-      box-shadow:0 18px 60px rgba(15,23,42,.9), 0 0 0 1px rgba(15,23,42,.8);
-      padding:14px 16px 16px;
-      position:relative;
-      overflow:hidden;
-    }
-    .card::before{
-      content:""; position:absolute; inset:0; pointer-events:none;
-      background:radial-gradient(circle at top left, rgba(56,189,248,.12), transparent 60%);
-      opacity:.7;
+      grid-template-columns: 2.15fr 1.1fr;
+      gap: 14px;
+      margin-top: 12px;
     }
 
-    .card-header{
-      display:flex;justify-content:space-between;align-items:center;
-      gap:8px;margin-bottom:10px;
+    @media (max-width: 1050px){
+      .grid{ grid-template-columns: 1fr; }
     }
-    .card-title{
-      font-size:.85rem;text-transform:uppercase;letter-spacing:.14em;color:var(--text-muted);
-    }
-    .pill{
-      font-size:.7rem;text-transform:uppercase;letter-spacing:.12em;
-      padding:3px 8px;border-radius:999px;border:1px solid rgba(148,163,184,.5);
-      color:var(--text-muted);
-    }
-    .pill.primary{border-color:var(--primary);color:var(--primary);background:rgba(8,47,73,.8)}
-    .pill.accent{border-color:var(--accent);color:var(--accent);background:rgba(5,46,22,.85)}
 
-    .metrics-row{
+    /* Metrics */
+    .metrics{
       display:grid;
-      grid-template-columns:repeat(4,minmax(0,1fr));
-      gap:10px;
+      grid-template-columns: repeat(4, minmax(0,1fr));
+      gap: 10px;
+      margin-bottom: 12px;
     }
-    @media (max-width:768px){ .metrics-row{grid-template-columns:repeat(2,minmax(0,1fr));} }
 
-    .metric-tile{
-      background:radial-gradient(circle at top, rgba(15,23,42,.4), rgba(15,23,42,.9));
-      border-radius:14px;padding:8px 10px;
-      border:1px solid rgba(30,64,175,.7);
-      display:flex;flex-direction:column;gap:4px;
+    @media (max-width: 820px){
+      .metrics{ grid-template-columns: repeat(2, minmax(0,1fr)); }
     }
-    .metric-label{font-size:.7rem;text-transform:uppercase;letter-spacing:.16em;color:var(--text-muted)}
-    .metric-value{font-size:1.1rem;font-weight:600}
-    .metric-sub{font-size:.7rem;color:var(--text-muted)}
-    .metric-highlight{color:var(--accent)}
 
-    /* ✅ this is the key: hard heights + grid always visible */
-    .charts-grid{
-      display:grid;
-      grid-template-columns:1fr 1fr;
-      gap:12px;
-      align-items:stretch;
+    .metric{
+      border-radius: var(--r2);
+      border: 1px solid var(--border2);
+      background: rgba(2,6,23,0.22);
+      padding: 10px 10px 9px;
     }
-    @media (max-width:1024px){ .charts-grid{grid-template-columns:1fr;} }
 
-    .chart-card{
-      background:rgba(15,23,42,.55);
-      border-radius:14px;
-      padding:10px 12px;
-      border:1px solid rgba(51,65,85,.65);
-      position:relative;
-      overflow:hidden;
-      min-height:240px;              /* ✅ ensures box itself shows */
+    .ml{
+      color: rgba(229,231,235,0.62);
+      text-transform: uppercase;
+      letter-spacing: .18em;
+      font-size: .68rem;
+      margin-bottom: 6px;
     }
-    .chart-card.small{min-height:210px;}
-    .mini-title{
-      font-size:.72rem;
-      text-transform:uppercase;
-      letter-spacing:.14em;
-      color:var(--text-muted);
+
+    .mv{
+      font-weight: 800;
+      font-size: 1.08rem;
       display:flex;
-      justify-content:space-between;
+      gap: 8px;
+      align-items: baseline;
+    }
+
+    .mv .unit{
+      font-weight: 700;
+      font-size: .78rem;
+      color: rgba(229,231,235,0.62);
+    }
+
+    .ms{
+      margin-top: 4px;
+      color: rgba(229,231,235,0.58);
+      font-size: .74rem;
+    }
+
+    .accentBlue{ color: var(--blue); text-shadow: 0 0 18px rgba(25,183,255,0.22); }
+    .accentGreen{ color: var(--green); text-shadow: 0 0 18px rgba(34,197,94,0.22); }
+    .accentPurple{ color: var(--purple); text-shadow: 0 0 18px rgba(168,85,247,0.22); }
+    .accentAmber{ color: var(--amber); text-shadow: 0 0 18px rgba(251,191,36,0.18); }
+
+    /* Charts area */
+    .charts4{
+      display:grid;
+      grid-template-columns: repeat(2, minmax(0,1fr));
+      gap: 10px;
+    }
+
+    @media (max-width: 900px){
+      .charts4{ grid-template-columns: 1fr; }
+    }
+
+    .chartCard{
+      border-radius: var(--r2);
+      border: 1px solid var(--border2);
+      background: rgba(2,6,23,0.22);
+      padding: 10px 10px 12px;
+      min-height: 240px;
+      position: relative;
+      overflow: hidden;
+    }
+
+    .chartCard::after{
+      content:"";
+      position:absolute;
+      inset:-2px;
+      pointer-events:none;
+      border-radius: var(--r2);
+      background: radial-gradient(circle at 30% 20%, rgba(25,183,255,0.12), transparent 60%);
+      opacity:.55;
+    }
+
+    .miniHead{
+      position: relative;
+      z-index: 1;
+      display:flex;
+      justify-content: space-between;
       align-items:center;
-      margin-bottom:8px;
-    }
-    .mini-badge{
-      font-size:.68rem;
-      padding:2px 8px;
-      border-radius:999px;
-      border:1px solid rgba(148,163,184,.5);
-      color:var(--text-muted);
-      background:rgba(2,6,23,.25);
+      gap: 10px;
+      margin-bottom: 8px;
+      color: rgba(229,231,235,0.66);
+      text-transform: uppercase;
+      letter-spacing: .14em;
+      font-size: .72rem;
     }
 
-    /* ✅ force canvas to have a visible drawing area */
-    .chart-wrap{height:200px;}
-    .chart-wrap.big{height:260px;}
-    canvas{width:100% !important; height:100% !important; display:block;}
+    .miniBadge{
+      font-size: .66rem;
+      padding: 3px 8px;
+      border-radius: 999px;
+      border: 1px solid var(--border);
+      background: rgba(2,6,23,0.30);
+      color: rgba(229,231,235,0.78);
+      letter-spacing: .14em;
+      white-space: nowrap;
+    }
 
-    /* Revenue panel (same as before) */
-    .revenue-grid{display:grid;grid-template-columns:1.3fr 1fr;gap:10px}
-    @media (max-width:768px){ .revenue-grid{grid-template-columns:1fr;} }
-    .rev-main{
-      background:radial-gradient(circle at top, var(--primary-soft), rgba(15,23,42,.95));
-      border-radius:14px;padding:10px 12px;border:1px solid rgba(56,189,248,.55);
-      display:flex;flex-direction:column;gap:6px;
+    .canvasWrap{
+      position: relative;
+      z-index: 1;
+      height: 180px;
     }
-    .rev-main-title{font-size:.75rem;text-transform:uppercase;letter-spacing:.14em;color:var(--text-muted)}
-    .rev-main-value{font-size:1.8rem;font-weight:700}
-    .rev-main-sub{font-size:.75rem;color:var(--text-muted)}
-    .rev-split{display:flex;gap:8px;margin-top:4px}
-    .rev-chip{
-      flex:1;border-radius:999px;padding:5px 9px;border:1px solid rgba(148,163,184,.6);
-      font-size:.7rem;display:flex;justify-content:space-between;align-items:center;color:var(--text-muted);
+
+    canvas{ display:block; width:100%; height:100%; }
+
+    /* Right revenue panel */
+    .revStack{
+      display:flex;
+      flex-direction: column;
+      gap: 10px;
     }
-    .rev-chip span.value{color:var(--accent);font-weight:600}
-    .rev-side{
-      background:radial-gradient(circle at top, var(--accent-soft), rgba(15,23,42,.97));
-      border-radius:14px;padding:10px 12px;border:1px solid rgba(34,197,94,.55);
-      display:flex;flex-direction:column;gap:6px;font-size:.8rem;
+
+    .revHero{
+      border-radius: var(--r2);
+      border: 1px solid rgba(25,183,255,0.25);
+      background: linear-gradient(180deg, rgba(25,183,255,0.10), rgba(2,6,23,0.22));
+      padding: 12px 12px 12px;
+      box-shadow: var(--glow-blue);
     }
-    .rev-side-title{ text-transform:uppercase;letter-spacing:.14em;color:var(--text-muted);font-size:.72rem; }
-    .rev-side-row{display:flex;justify-content:space-between;align-items:center}
-    .rev-side-row span.value{font-weight:600;color:var(--accent)}
+
+    .revHeroTop{
+      display:flex;
+      justify-content: space-between;
+      align-items: baseline;
+      gap: 10px;
+      margin-bottom: 8px;
+    }
+
+    .revBig{
+      font-size: 2.0rem;
+      font-weight: 900;
+      letter-spacing: .02em;
+      text-shadow: 0 0 18px rgba(25,183,255,0.22);
+    }
+
+    .revSmall{
+      color: rgba(229,231,235,0.66);
+      font-size: .78rem;
+      text-transform: uppercase;
+      letter-spacing: .16em;
+    }
+
+    .revRow{
+      display:flex;
+      justify-content: space-between;
+      align-items:center;
+      gap: 10px;
+      padding: 7px 8px;
+      border-radius: 12px;
+      border: 1px solid var(--border2);
+      background: rgba(2,6,23,0.18);
+      font-size: .82rem;
+      color: rgba(229,231,235,0.78);
+    }
+
+    .revRow b{
+      color: rgba(229,231,235,0.92);
+      font-weight: 800;
+    }
+
+    .revHint{
+      color: rgba(229,231,235,0.60);
+      font-size: .76rem;
+      line-height: 1.3;
+      margin-top: 8px;
+    }
+
+    .ctaRow{
+      display:flex;
+      gap: 10px;
+      margin-top: 10px;
+    }
+
+    .btn{
+      appearance: none;
+      border: 1px solid rgba(25,183,255,0.35);
+      background: linear-gradient(180deg, rgba(25,183,255,0.18), rgba(2,6,23,0.20));
+      color: rgba(229,231,235,0.92);
+      padding: 10px 12px;
+      border-radius: 14px;
+      font-weight: 800;
+      letter-spacing: .08em;
+      text-transform: uppercase;
+      font-size: .78rem;
+      cursor: pointer;
+      box-shadow: var(--glow-blue);
+      transition: transform 160ms ease, border-color 160ms ease, filter 160ms ease;
+      flex: 1;
+      text-align: center;
+      text-decoration: none;
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      gap: 8px;
+      white-space: nowrap;
+    }
+
+    .btn:hover{
+      transform: translateY(-1px);
+      border-color: rgba(34,197,94,0.45);
+      filter: brightness(1.08);
+      box-shadow: var(--glow-green);
+    }
+
+    .btn.secondary{
+      border-color: rgba(168,85,247,0.30);
+      background: linear-gradient(180deg, rgba(168,85,247,0.14), rgba(2,6,23,0.20));
+      box-shadow: var(--glow-purple);
+    }
+
+    .btn.secondary:hover{
+      border-color: rgba(25,183,255,0.45);
+      box-shadow: var(--glow-blue);
+    }
+
+    .revMiniGrid{
+      display:grid;
+      grid-template-columns: repeat(2, minmax(0,1fr));
+      gap: 10px;
+    }
+
+    @media (max-width: 1050px){
+      .revMiniGrid{ grid-template-columns: 1fr; }
+    }
+
+    .revMini{
+      border-radius: var(--r2);
+      border: 1px solid var(--border2);
+      background: rgba(2,6,23,0.22);
+      padding: 10px 10px 10px;
+    }
+
+    .revMini .ml{ margin-bottom: 6px; }
+    .revMini .mv{ font-size: 1.15rem; }
+
+    /* Terminal log style ticker */
+    .terminal{
+      border-radius: var(--r2);
+      border: 1px solid rgba(34,197,94,0.18);
+      background: linear-gradient(180deg, rgba(2,6,23,0.55), rgba(2,6,23,0.22));
+      padding: 10px 10px 10px;
+      box-shadow: 0 0 28px rgba(34,197,94,0.10);
+    }
+
+    .terminalHead{
+      display:flex;
+      justify-content: space-between;
+      align-items: center;
+      gap: 10px;
+      margin-bottom: 8px;
+    }
+
+    .termTitle{
+      font-family: var(--mono);
+      font-size: .72rem;
+      text-transform: uppercase;
+      letter-spacing: .16em;
+      color: rgba(229,231,235,0.62);
+    }
+
+    .termDotRow{
+      display:flex;
+      gap: 6px;
+      align-items: center;
+    }
+
+    .td{
+      width: 8px; height: 8px; border-radius: 999px;
+      opacity: .9;
+    }
+    .td.g{ background: var(--green); box-shadow: 0 0 12px rgba(34,197,94,0.5); }
+    .td.b{ background: var(--blue); box-shadow: 0 0 12px rgba(25,183,255,0.45); }
+    .td.p{ background: var(--purple); box-shadow: 0 0 12px rgba(168,85,247,0.45); }
+
+    /* CLI-style append-only log */
+    .log{
+      font-family: var(--mono);
+      font-size: .78rem;
+      color: rgba(229,231,235,0.78);
+      line-height: 1.45;
+      max-height: 150px;
+      overflow-y: auto;
+      overflow-x: hidden;
+      position: relative;
+      scrollbar-width: thin;
+    }
+
+    .logLine{
+      display:flex;
+      gap: 10px;
+      padding: 3px 0;
+      opacity: .94;
+      transform: translateY(0);
+      transition: opacity 420ms ease, transform 420ms ease;
+      border-bottom: 1px solid rgba(148,163,184,0.08);
+    }
+    .logLine:last-child{ border-bottom: none; }
+
+    .logLine.enter{
+      opacity: 0;
+      transform: translateY(8px);
+    }
+
+    .lt{
+      width: 86px;
+      color: rgba(229,231,235,0.52);
+      flex: 0 0 auto;
+    }
+
+    .lm{
+      flex: 1;
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+    }
+
+    .in{ color: rgba(34,197,94,0.92); }
+    .out{ color: rgba(251,113,133,0.92); }
+
+    /* Vehicles wall with multi-line flow */
+    .vehiclesWrap{
+      display:grid;
+      grid-template-columns: 1.6fr 1.1fr;
+      gap: 10px;
+      margin-top: 10px;
+    }
+
+    @media (max-width: 1050px){
+      .vehiclesWrap{ grid-template-columns: 1fr; }
+    }
+
+    .vehicleWall{
+      border-radius: var(--r2);
+      border: 1px solid var(--border2);
+      background: rgba(2,6,23,0.22);
+      padding: 10px 10px 10px;
+    }
+
+    .wallHead{
+      display:flex;
+      justify-content: space-between;
+      align-items: center;
+      gap: 10px;
+      flex-wrap: wrap;
+      margin-bottom: 8px;
+    }
+
+    .legend{
+      display:flex;
+      gap: 14px;
+      align-items: center;
+      color: rgba(229,231,235,0.62);
+      font-size: .78rem;
+    }
+
+    .legend b{ color: rgba(229,231,235,0.92); font-weight: 900; }
+
+    .counts{
+      display:flex;
+      gap: 10px;
+      align-items: center;
+      color: rgba(229,231,235,0.62);
+      font-size: .78rem;
+    }
+
+    .dot2{
+      width: 8px; height: 8px; border-radius: 999px; display:inline-block;
+    }
+    .dc{ background: var(--blue2); box-shadow: 0 0 12px rgba(14,165,233,0.35); }
+    .d3{ background: var(--green); box-shadow: 0 0 12px rgba(34,197,94,0.35); }
+    .d2{ background: var(--purple); box-shadow: 0 0 12px rgba(168,85,247,0.35); }
+
+    .vehicleGrid{
+      display:grid;
+      grid-template-columns: repeat(auto-fill, minmax(150px, 1fr));
+      gap: 8px;
+      min-height: 200px;
+      align-content: start;
+    }
+
+    .vc{
+      border-radius: 14px;
+      border: 1px solid rgba(148,163,184,0.16);
+      background: rgba(2,6,23,0.24);
+      padding: 9px 10px 9px;
+      position: relative;
+      overflow: hidden;
+      opacity: 1;
+      transform: translateY(0);
+      transition: opacity 520ms ease, transform 520ms ease, box-shadow 420ms ease;
+    }
+
+    .vc::before{
+      content:"";
+      position:absolute;
+      inset:0;
+      pointer-events:none;
+      opacity: .55;
+      background: radial-gradient(circle at 25% 15%, rgba(25,183,255,0.14), transparent 58%);
+    }
+
+    .vc.car{ border-color: rgba(14,165,233,0.35); box-shadow: 0 0 18px rgba(14,165,233,0.12); }
+    .vc.w3{ border-color: rgba(34,197,94,0.30); box-shadow: 0 0 18px rgba(34,197,94,0.12); }
+    .vc.w2{ border-color: rgba(168,85,247,0.30); box-shadow: 0 0 18px rgba(168,85,247,0.12); }
+
+    .vc.enter{ opacity: 0; transform: translateY(10px); }
+    .vc.exit{ opacity: 0; transform: translateY(-10px); }
+
+    .vcTop{
+      display:flex;
+      justify-content: space-between;
+      align-items: center;
+      gap: 10px;
+      position: relative;
+      z-index: 1;
+    }
+
+    .vcId{
+      font-family: var(--mono);
+      font-size: .72rem;
+      color: rgba(229,231,235,0.60);
+      letter-spacing: .10em;
+      text-transform: uppercase;
+    }
+
+    .vcType{
+      font-weight: 900;
+      font-size: .85rem;
+      letter-spacing: .02em;
+    }
+
+    .vcMid{
+      display:flex;
+      justify-content: space-between;
+      align-items: baseline;
+      gap: 10px;
+      margin-top: 6px;
+      position: relative;
+      z-index: 1;
+    }
+
+    .vcPow{
+      font-size: 1.05rem;
+      font-weight: 900;
+      color: rgba(34,197,94,0.90);
+      text-shadow: 0 0 16px rgba(34,197,94,0.16);
+    }
+
+    .vcPow .u{
+      font-size: .72rem;
+      color: rgba(229,231,235,0.55);
+      margin-left: 4px;
+      font-weight: 800;
+    }
+
+    .vcFoot{
+      margin-top: 6px;
+      display:flex;
+      justify-content: space-between;
+      gap: 10px;
+      font-size: .74rem;
+      color: rgba(229,231,235,0.55);
+      position: relative;
+      z-index: 1;
+    }
 
     footer{
-      margin-top:10px;
-      font-size:.7rem;
-      color:var(--text-muted);
+      margin-top: 12px;
+      color: rgba(229,231,235,0.55);
+      font-size: .74rem;
       display:flex;
-      justify-content:space-between;
-      align-items:center;
-      gap:8px;
-      flex-wrap:wrap;
+      justify-content: space-between;
+      gap: 10px;
+      flex-wrap: wrap;
     }
   </style>
 </head>
@@ -222,308 +697,766 @@
   <div class="shell">
     <header>
       <div class="brand">
-        <div class="brand-title">
-          <span class="brand-dot"></span>
+        <div class="brandTitle">
+          <span class="dot"></span>
           DeCharge DeGen Energy Terminal
-          <span class="brand-pill">Mark1</span>
+          <span class="pill">Mark1</span>
         </div>
-        <div class="brand-sub">Live simulated EV energy + revenue feed for the DeCharge network.</div>
+        <div class="sub">
+          Live EV energy + revenue feed for the DeCharge network.
+          Designed to feel like a neon glass terminal: the pool earns yield as vehicles draw power.
+        </div>
       </div>
-      <div class="header-right">
-        <div class="badge degen"><span class="key">Mode</span><span class="value" id="modeLabel">office</span></div>
-        <div class="badge"><span class="key">Sim Time</span><span class="value" id="simTime">00:00:00</span></div>
-        <div class="badge"><span class="key">Sessions / Min</span><span class="value" id="arrivalsPerMin">0.00</span></div>
-        <div class="badge"><span class="key">Corr</span><span class="value" id="corrValue">0.00</span></div>
+
+      <div class="badges">
+        <div class="badge mode">
+          <span class="k">Mode</span><span class="v" id="modeLabel">office</span>
+        </div>
+        <div class="badge">
+          <span class="k">Sim Time</span><span class="v" id="simTime">00:00:00</span>
+        </div>
+        <div class="badge">
+          <span class="k">Sessions / Min</span><span class="v" id="arrivalsPerMin">0.00</span>
+        </div>
+        <div class="badge">
+          <span class="k">Corr</span><span class="v" id="corrValue">0.00</span>
+        </div>
       </div>
     </header>
 
+    <!-- Metrics -->
     <div class="card">
-      <div class="metrics-row">
-        <div class="metric-tile">
-          <div class="metric-label">Network Load</div>
-          <div class="metric-value metric-highlight" id="totalKW">0.0 kW</div>
-          <div class="metric-sub">Instantaneous charging power</div>
-        </div>
-        <div class="metric-tile">
-          <div class="metric-label">Energy Dispensed (Sim Day)</div>
-          <div class="metric-value" id="energyKWh">0.00 MWh</div>
-          <div class="metric-sub">Target: <span id="targetKWh">0</span> kWh</div>
-        </div>
-        <div class="metric-tile">
-          <div class="metric-label">Active Vehicles</div>
-          <div class="metric-value" id="activeVehicles">0</div>
-          <div class="metric-sub">Currently drawing power</div>
-        </div>
-        <div class="metric-tile">
-          <div class="metric-label">FOMO Signal</div>
-          <div class="metric-value" id="fomoSignal">Loading…</div>
-          <div class="metric-sub" id="fomoSub">Calibrating regime.</div>
+      <div class="cardInner">
+        <div class="metrics">
+          <div class="metric">
+            <div class="ml">Network Load</div>
+            <div class="mv"><span class="accentBlue" id="totalKW">0.0</span><span class="unit">kW</span></div>
+            <div class="ms">Instantaneous charging power</div>
+          </div>
+
+          <div class="metric">
+            <div class="ml">Energy Dispensed</div>
+            <div class="mv"><span id="energyMWh">0.000</span><span class="unit">MWh</span></div>
+            <div class="ms">Target <span class="accentAmber" id="targetKWh">0</span> kWh</div>
+          </div>
+
+          <div class="metric">
+            <div class="ml">Active Vehicles</div>
+            <div class="mv"><span class="accentGreen" id="activeVehicles">0</span><span class="unit">live</span></div>
+            <div class="ms">Sessions currently drawing power</div>
+          </div>
+
+          <div class="metric">
+            <div class="ml">Yield Pulse</div>
+            <div class="mv"><span class="accentPurple" id="yieldNow">0.00</span><span class="unit">$/min</span></div>
+            <div class="ms"><span id="yieldNarr">Calibrating…</span></div>
+          </div>
         </div>
       </div>
     </div>
 
     <div class="grid">
-      <!-- Left: 4 charts -->
+      <!-- LEFT: charts + flow -->
       <div class="card">
-        <div class="card-header">
-          <div class="card-title">Network State · Real-time Signals</div>
-          <div class="pill primary">4 Live Charts</div>
-        </div>
-
-        <div class="charts-grid">
-          <div class="chart-card">
-            <div class="mini-title"><span>Power + Occupancy</span><span class="mini-badge">kW · active</span></div>
-            <div class="chart-wrap big"><canvas id="chartPowerOcc"></canvas></div>
+        <div class="cardInner">
+          <div class="cardHead">
+            <div class="title">Network State</div>
+            <div class="pill">Neon · Glass · Live</div>
           </div>
 
-          <div class="chart-card small">
-            <div class="mini-title"><span>Arrival Velocity</span><span class="mini-badge">sessions/min</span></div>
-            <div class="chart-wrap"><canvas id="chartArrivals"></canvas></div>
+          <div class="charts4">
+            <div class="chartCard">
+              <div class="miniHead">
+                <span>Power (kW)</span>
+                <span class="miniBadge">demand curve</span>
+              </div>
+              <div class="canvasWrap"><canvas id="chPower"></canvas></div>
+            </div>
+
+            <div class="chartCard">
+              <div class="miniHead">
+                <span>Active Vehicles</span>
+                <span class="miniBadge">occupancy</span>
+              </div>
+              <div class="canvasWrap"><canvas id="chOcc"></canvas></div>
+            </div>
+
+            <div class="chartCard">
+              <div class="miniHead">
+                <span>Vehicle Mix</span>
+                <span class="miniBadge">🚗 🛺 🛵</span>
+              </div>
+              <div class="canvasWrap"><canvas id="chMix"></canvas></div>
+            </div>
+
+            <div class="chartCard">
+              <div class="miniHead">
+                <span>Pool Yield (est)</span>
+                <span class="miniBadge" id="yieldTag">steady</span>
+              </div>
+              <div class="canvasWrap"><canvas id="chYield"></canvas></div>
+            </div>
           </div>
 
-          <div class="chart-card small">
-            <div class="mini-title"><span>Energy Progress</span><span class="mini-badge">% of target</span></div>
-            <div class="chart-wrap"><canvas id="chartEnergy"></canvas></div>
-          </div>
+          <div class="vehiclesWrap">
+            <!-- left column -->
+            <div>
+              <!-- Terminal log style ticker (kept) -->
+              <div class="terminal">
+                <div class="terminalHead">
+                  <div class="termTitle">Live Network Log</div>
+                  <div class="termDotRow">
+                    <span class="td g"></span><span class="td b"></span><span class="td p"></span>
+                  </div>
+                </div>
+                <div class="log" id="logTicker"></div>
+              </div>
 
-          <div class="chart-card small">
-            <div class="mini-title"><span>FOMO Heat</span><span class="mini-badge">corr + momentum</span></div>
-            <div class="chart-wrap"><canvas id="chartFomo"></canvas></div>
+              <div style="height:10px"></div>
+
+              <!-- Vehicles wall -->
+              <div class="vehicleWall">
+                <div class="wallHead">
+                  <div class="title" style="margin:0;">Vehicle Flow · Top Active Sessions</div>
+                  <div class="legend">
+                    <span><b>🚗</b> Car</span>
+                    <span><b>🛺</b> 3W</span>
+                    <span><b>🛵</b> 2W</span>
+                  </div>
+                  <div class="counts">
+                    <span><span class="dot2 dc"></span>Cars <b id="countCar">0</b></span>
+                    <span><span class="dot2 d3"></span>3W <b id="count3w">0</b></span>
+                    <span><span class="dot2 d2"></span>2W <b id="count2w">0</b></span>
+                  </div>
+                </div>
+
+                <div class="vehicleGrid" id="vehicleGrid"></div>
+              </div>
+            </div>
+
+            <!-- right column (kept, but no duplicate logs) -->
+            <div class="tape" style="display:none;">
+              <!-- Intentionally hidden to avoid duplicate log stream -->
+              <div class="tapeHead">
+                <div class="tapeTitle">Event Tape</div>
+                <div class="tapeHint">Most recent plug / unplug</div>
+              </div>
+              <div class="tapeBody" id="eventTape"></div>
+            </div>
           </div>
         </div>
       </div>
 
-      <!-- Right: revenue -->
+      <!-- RIGHT: revenue becomes addictive -->
       <div class="card">
-        <div class="card-header">
-          <div class="card-title">Network Revenue</div>
-          <div class="pill accent">$0.004 / kWh · 20% protocol</div>
-        </div>
+        <div class="cardInner">
+          <div class="cardHead">
+            <div class="title">Pool Economics</div>
+            <div class="pill">$0.004/kWh · 20% protocol</div>
+          </div>
 
-        <div class="revenue-grid">
-          <div class="rev-main">
-            <div class="rev-main-title">Revenue in Last 60 Seconds (sim)</div>
-            <div class="rev-main-value">$<span id="revLast60">0.00</span></div>
-            <div class="rev-main-sub">
-              Protocol fees:
-              <span style="color:var(--accent);font-weight:600;">$<span id="revLast60Protocol">0.00</span></span>
+          <div class="revStack">
+            <div class="revHero">
+              <div class="revHeroTop">
+                <div>
+                  <div class="revSmall">Revenue last 60s</div>
+                  <div class="revBig">$<span id="revLast60">0.0000</span></div>
+                </div>
+                <div style="text-align:right;">
+                  <div class="revSmall">Protocol fees</div>
+                  <div style="font-weight:900;font-size:1.2rem;color:rgba(34,197,94,0.92);text-shadow:0 0 16px rgba(34,197,94,0.18);">
+                    $<span id="revLast60Prot">0.0000</span>
+                  </div>
+                </div>
+              </div>
+
+              <div class="revRow">
+                <span>To Hosts + LPs</span>
+                <b>$<span id="revLast60Hosts">0.0000</span></b>
+              </div>
+              <div class="revRow">
+                <span>Current Yield Rate (est)</span>
+                <b><span id="yieldRateNow">$0.0000</span> / min</b>
+              </div>
+              <div class="revRow">
+                <span>Est. Daily Yield @ current</span>
+                <b>$<span id="revDailyEst">0.00</span></b>
+              </div>
+
+              <div class="revHint" id="fomoLine">
+                The pool is quiet. The next breakout is when arrivals spike and correlation tightens.
+              </div>
+
+              <div class="ctaRow">
+                <!-- CHANGE THIS LINK -->
+                <a class="btn" id="investBtn" href="https://decharge.network/network/" target="_blank" rel="noreferrer">
+                  ⚡ Invest in Pool
+                </a>
+                <a class="btn secondary" href="https://decharge.network/network/" target="_blank" rel="noreferrer">
+                  View Network
+                </a>
+              </div>
             </div>
-            <div class="rev-split">
-              <div class="rev-chip"><span>To Hosts + LPs</span><span class="value">$<span id="revLast60Hosts">0.00</span></span></div>
-              <div class="rev-chip"><span>To Protocol</span><span class="value">$<span id="revLast60ProtocolChip">0.00</span></span></div>
+
+            <div class="revMiniGrid">
+              <div class="revMini">
+                <div class="ml">Lifetime Margin (all time)</div>
+                <div class="mv"><span class="accentBlue">$</span><span id="revLifetime">0.00</span></div>
+                <div class="ms">Cumulative margin</div>
+              </div>
+
+              <div class="revMini">
+                <div class="ml">Lifetime Protocol Fees</div>
+                <div class="mv"><span class="accentGreen">$</span><span id="revLifetimeProt">0.00</span></div>
+                <div class="ms">20% protocol share</div>
+              </div>
+
+              <div class="revMini">
+                <div class="ml">Utilisation Signal</div>
+                <div class="mv"><span id="utilSignal" class="accentAmber">Calibrating</span></div>
+                <div class="ms" id="utilNarr">Waiting for enough samples…</div>
+              </div>
+
+              <div class="revMini">
+                <div class="ml">Arrival Regime</div>
+                <div class="mv"><span id="arrivalSignal" class="accentPurple">Warm-up</span></div>
+                <div class="ms" id="arrivalNarr">Low flow. Watch for the next wave.</div>
+              </div>
             </div>
           </div>
 
-          <div class="rev-side">
-            <div class="rev-side-title">Cumulative Margins</div>
-            <div class="rev-side-row"><span>Total Margin (All Time)</span><span class="value">$<span id="revLifetime">0.00</span></span></div>
-            <div class="rev-side-row"><span>Protocol Fees (All Time)</span><span class="value">$<span id="revLifetimeProtocol">0.00</span></span></div>
-            <div class="rev-side-row" style="margin-top:4px;"><span style="color:var(--text-muted);">Est. Daily at Current Rate</span><span class="value">$<span id="revDailyAtRate">0.00</span></span></div>
-          </div>
         </div>
       </div>
     </div>
 
     <footer>
-      <span>Powered by DeCharge · DeGen Energy Terminal · Mark1</span>
-      <span>Data simulated on backend, shared globally via Redis snapshot.</span>
+      <span>DeCharge · DeGen Energy Terminal · Mark1</span>
+      <span>Agg backend across partners</span>
     </footer>
   </div>
 
   <script>
-    const API_BASE = "https://dtermnal.onrender.com";
-    const MAX_POINTS = 240;
+    // ---------------------------
+    // CONFIG
+    // ---------------------------
+    const API_BASE = "https://dtermnal.onrender.com"; // no trailing slash
 
-    let chartPowerOcc, chartArrivals, chartEnergy, chartFomo;
+    // ---------------------------
+    // UTIL
+    // ---------------------------
+    function safeArr(a){ return Array.isArray(a) ? a : []; }
+    function n(x){ x = Number(x); return isNaN(x) ? 0 : x; }
+    function fmt(x, d=2){ return n(x).toFixed(d); }
+    function clamp01(x){ x = n(x); return Math.max(0, Math.min(1, x)); }
 
-    const aux = { labels: [], arrivals: [], energyPct: [], corr: [], heat: [] };
-
-    function formatNumber(v, d=2){
-      const n = Number(v);
-      if (!Number.isFinite(n)) return (0).toFixed(d);
-      return n.toFixed(d);
+    // watts/kW formatter (used for realistic session cards + log)
+    function fmtPowerW(kW){
+      const w = Math.max(0, n(kW) * 1000);
+      if (w >= 1000) return { text: (w/1000).toFixed(1), unit: "kW" };
+      return { text: Math.round(w).toString(), unit: "W" };
     }
-    function clamp(x,a,b){ return Math.max(a, Math.min(b,x)); }
 
-    function createLineChart(canvasId, datasets, scales){
-      const ctx = document.getElementById(canvasId).getContext("2d");
+    function iconFor(vtype){
+      const vt = String(vtype || "").toLowerCase();
+      if (vt === "car") return "🚗";
+      if (vt === "3w") return "🛺";
+      return "🛵";
+    }
+    function clsFor(vtype){
+      const vt = String(vtype || "").toLowerCase();
+      if (vt === "car") return "car";
+      if (vt === "3w") return "w3";
+      return "w2";
+    }
+
+    // ---------------------------
+    // CHARTS (neon lines)
+    // ---------------------------
+    let chPower, chOcc, chMix, chYield;
+
+    function mkLine(ctx, label, stroke, fill){
       return new Chart(ctx, {
         type: "line",
-        data: { labels: [], datasets },
+        data: { labels: [], datasets: [{
+          label,
+          data: [],
+          borderColor: stroke,
+          backgroundColor: fill,
+          borderWidth: 2,
+          pointRadius: 0,
+          tension: 0.25,
+          fill: true
+        }]},
         options: {
           responsive: true,
           maintainAspectRatio: false,
           animation: false,
-          elements: { point: { radius: 0 } },
-          scales,
           plugins: {
-            legend: { labels: { color: "rgba(209,213,219,0.9)" } }
+            legend: { labels: { color: "rgba(229,231,235,0.78)" } },
+            tooltip: {
+              enabled: true,
+              backgroundColor: "rgba(2,6,23,0.85)",
+              borderColor: "rgba(148,163,184,0.25)",
+              borderWidth: 1,
+              titleColor: "rgba(229,231,235,0.92)",
+              bodyColor: "rgba(229,231,235,0.78)",
+            }
+          },
+          scales: {
+            x: {
+              ticks: { color: "rgba(229,231,235,0.55)", autoSkip: true, maxTicksLimit: 6 },
+              grid: { color: "rgba(148,163,184,0.10)" }
+            },
+            y: {
+              ticks: { color: "rgba(229,231,235,0.55)" },
+              grid: { color: "rgba(148,163,184,0.10)" }
+            }
+          }
+        }
+      });
+    }
+
+    function mkBar(ctx){
+      return new Chart(ctx, {
+        type: "bar",
+        data: {
+          labels: ["Cars","3W","2W"],
+          datasets: [{
+            label: "Count",
+            data: [0,0,0],
+            backgroundColor: [
+              "rgba(25,183,255,0.28)",
+              "rgba(34,197,94,0.24)",
+              "rgba(168,85,247,0.24)"
+            ],
+            borderColor: [
+              "rgba(25,183,255,0.9)",
+              "rgba(34,197,94,0.9)",
+              "rgba(168,85,247,0.9)"
+            ],
+            borderWidth: 1.5
+          }]
+        },
+        options: {
+          responsive: true,
+          maintainAspectRatio: false,
+          animation: false,
+          plugins: { legend: { display: false } },
+          scales: {
+            x: {
+              ticks: { color: "rgba(229,231,235,0.55)" },
+              grid: { color: "rgba(148,163,184,0.08)" }
+            },
+            y: {
+              ticks: { color: "rgba(229,231,235,0.55)" },
+              grid: { color: "rgba(148,163,184,0.10)" }
+            }
           }
         }
       });
     }
 
     function initCharts(){
-      chartPowerOcc = createLineChart("chartPowerOcc",
-        [
-          { label:"Power (kW)", data:[], borderColor:"#0ea5e9", borderWidth:2, tension:.25, yAxisID:"y1" },
-          { label:"Active Vehicles", data:[], borderColor:"#22c55e", borderWidth:1.5, borderDash:[4,3], tension:.25, yAxisID:"y2" }
-        ],
-        {
-          x: { ticks:{ color:"rgba(148,163,184,0.9)", maxTicksLimit:6 }, grid:{ color:"rgba(30,64,175,0.25)" } },
-          y1:{ position:"left", ticks:{ color:"#0ea5e9" }, grid:{ color:"rgba(30,64,175,0.25)" } },
-          y2:{ position:"right", ticks:{ color:"#22c55e" }, grid:{ drawOnChartArea:false } }
-        }
+      chPower = mkLine(
+        document.getElementById("chPower").getContext("2d"),
+        "Power (kW)",
+        "rgba(25,183,255,0.95)",
+        "rgba(25,183,255,0.10)"
       );
-
-      chartArrivals = createLineChart("chartArrivals",
-        [{ label:"Arrivals / min", data:[], borderColor:"#a855f7", borderWidth:2, tension:.25 }],
-        {
-          x: { ticks:{ color:"rgba(148,163,184,0.9)", maxTicksLimit:6 }, grid:{ color:"rgba(30,64,175,0.18)" } },
-          y: { ticks:{ color:"rgba(229,231,235,0.85)" }, grid:{ color:"rgba(30,64,175,0.18)" } }
-        }
+      chOcc = mkLine(
+        document.getElementById("chOcc").getContext("2d"),
+        "Active Vehicles",
+        "rgba(34,197,94,0.95)",
+        "rgba(34,197,94,0.08)"
       );
+      chMix = mkBar(document.getElementById("chMix").getContext("2d"));
+      chYield = mkLine(
+        document.getElementById("chYield").getContext("2d"),
+        "Yield (pulse)",
+        "rgba(168,85,247,0.95)",
+        "rgba(168,85,247,0.08)"
+      );
+    }
 
-      chartEnergy = createLineChart("chartEnergy",
-        [{ label:"Energy Progress (%)", data:[], borderColor:"#22c55e", borderWidth:2, tension:.25 }],
-        {
-          x: { ticks:{ color:"rgba(148,163,184,0.9)", maxTicksLimit:6 }, grid:{ color:"rgba(30,64,175,0.18)" } },
-          y: {
-            min:0, max:100,
-            ticks:{ color:"rgba(229,231,235,0.85)", callback:(v)=>v+"%" },
-            grid:{ color:"rgba(30,64,175,0.18)" }
+    // ---------------------------
+    // VEHICLE WALL (multi-line, smooth enter/exit)
+    // ---------------------------
+    const vehicleEl = new Map();      // id -> element
+    let prevTopIds = new Set();       // diff events
+    const localTape = [];
+    const MAX_TAPE = 80;              // CLI feel, but bounded
+
+    function pushLocal(kind, t, msg){
+      localTape.push({kind, t, msg}); // append at end (CLI style)
+      if (localTape.length > MAX_TAPE) localTape.shift();
+    }
+
+    function buildDiffEvents(top, simTime){
+      const next = new Set(top.map(s => String(s.id)));
+
+      for (const id of next){
+        if (!prevTopIds.has(id)){
+          const s = top.find(x => String(x.id) === id);
+          const vt = s ? s.vtype : "2w";
+          const p = s ? n(s.p) : 0;
+          const pw = fmtPowerW(p);
+          pushLocal("in", simTime, `+ Plugged: #${id} ${String(vt).toUpperCase()} @ ${pw.text}${pw.unit}`);
+        }
+      }
+      for (const id of prevTopIds){
+        if (!next.has(id)){
+          pushLocal("out", simTime, `- Unplugged: #${id}`);
+        }
+      }
+      prevTopIds = next;
+    }
+
+    function mergeTape(backendTape, simTime){
+      // keep existing behavior: merge backend + local, but do NOT dedupe into a new array every render of UI.
+      // We'll treat this as an "event stream" and only append new unique lines to the CLI log.
+      const a = safeArr(backendTape).map(e => ({
+        kind: (e.kind || ""),
+        t: (e.t || simTime || ""),
+        msg: (e.msg || "")
+      }));
+      const b = localTape.map(x => ({...x}));
+      return [...a, ...b].filter(x => x && x.msg);
+    }
+
+    function updateVehicleCounts(top){
+      let c=0, w3=0, w2=0;
+      top.forEach(s=>{
+        const vt = String(s.vtype||"").toLowerCase();
+        if (vt==="car") c++;
+        else if (vt==="3w") w3++;
+        else w2++;
+      });
+      document.getElementById("countCar").textContent = c;
+      document.getElementById("count3w").textContent = w3;
+      document.getElementById("count2w").textContent = w2;
+    }
+
+    function updateVehicles(top, now){
+      const grid = document.getElementById("vehicleGrid");
+      top = safeArr(top);
+
+      updateVehicleCounts(top);
+
+      const incoming = new Set(top.map(s => String(s.id)));
+
+      // create/update
+      for (const s of top){
+        const id = String(s.id);
+        const vt = String(s.vtype||"").toLowerCase();
+        const power = n(s.p);
+
+        let el = vehicleEl.get(id);
+        if (!el){
+          const pw = fmtPowerW(power);
+
+          el = document.createElement("div");
+          el.className = `vc ${clsFor(vt)} enter`;
+          el.dataset.id = id;
+
+          el.innerHTML = `
+            <div class="vcTop">
+              <div class="vcId">#${id}</div>
+              <div class="vcType">${iconFor(vt)} ${vt.toUpperCase()}</div>
+            </div>
+            <div class="vcMid">
+              <div class="vcPow"><span class="val">${pw.text}</span><span class="u">${pw.unit}</span></div>
+              <div class="vcId" style="text-align:right;">LIVE</div>
+            </div>
+            <div class="vcFoot">
+              <span>plugged</span>
+              <span class="t">${now.simTime || ""}</span>
+            </div>
+          `;
+
+          // If the empty placeholder exists, clear it once we have real cards
+          if (grid.dataset.empty === "1"){
+            grid.innerHTML = "";
+            grid.dataset.empty = "0";
           }
+
+          grid.appendChild(el);
+          vehicleEl.set(id, el);
+
+          requestAnimationFrame(() => el.classList.remove("enter"));
+        } else {
+          const pw = fmtPowerW(power);
+          const val = el.querySelector(".val");
+          const unit = el.querySelector(".vcPow .u");
+          const t = el.querySelector(".t");
+          if (val) val.textContent = pw.text;
+          if (unit) unit.textContent = pw.unit;
+          if (t) t.textContent = now.simTime || "";
+
+          el.classList.remove("car","w3","w2");
+          el.classList.add(clsFor(vt));
+
+          const typeNode = el.querySelector(".vcType");
+          if (typeNode) typeNode.textContent = `${iconFor(vt)} ${vt.toUpperCase()}`;
         }
-      );
+      }
 
-      chartFomo = createLineChart("chartFomo",
-        [
-          { label:"FOMO Heat", data:[], borderColor:"#f97373", borderWidth:2, tension:.25 },
-          { label:"Correlation", data:[], borderColor:"#0ea5e9", borderWidth:1.25, borderDash:[5,4], tension:.25 }
-        ],
-        {
-          x: { ticks:{ color:"rgba(148,163,184,0.9)", maxTicksLimit:6 }, grid:{ color:"rgba(30,64,175,0.18)" } },
-          y: { ticks:{ color:"rgba(229,231,235,0.85)" }, grid:{ color:"rgba(30,64,175,0.18)" } }
+      // remove
+      for (const [id, el] of vehicleEl.entries()){
+        if (!incoming.has(id)){
+          el.classList.add("exit");
+          setTimeout(()=>{
+            try{ el.remove(); }catch{}
+            vehicleEl.delete(id);
+          }, 560);
         }
-      );
-    }
+      }
 
-    function momentum(arr){
-      const n = arr.length;
-      if (n < 8) return 0;
-      const last = arr[n-1];
-      const window = arr.slice(Math.max(0, n-20));
-      const avg = window.reduce((a,b)=>a+b,0)/Math.max(1,window.length);
-      return last-avg;
-    }
-
-    function pushAux(label, a, ePct, c, heat){
-      aux.labels.push(label);
-      aux.arrivals.push(a);
-      aux.energyPct.push(ePct);
-      aux.corr.push(c);
-      aux.heat.push(heat);
-      if (aux.labels.length > MAX_POINTS){
-        aux.labels.shift(); aux.arrivals.shift(); aux.energyPct.shift(); aux.corr.shift(); aux.heat.shift();
+      // empty state (do NOT fight with real cards)
+      if (top.length === 0 && grid.childElementCount === 0){
+        grid.dataset.empty = "1";
+        grid.innerHTML = `<div style="color:rgba(229,231,235,0.55);font-size:.82rem;">No active sessions right now. Waiting for the next wave…</div>`;
       }
     }
 
-    function updateCharts(series, now){
-      const t = Array.isArray(series.t) ? series.t : [];
-      const pkw = Array.isArray(series.pkw) ? series.pkw : [];
-      const oi = Array.isArray(series.oi) ? series.oi : [];
-      const n = Math.min(t.length, pkw.length, oi.length);
-      if (n < 2) return;
+    // ---------------------------
+    // CLI LOG (append-only, no re-render)
+    // ---------------------------
+    const seenLog = new Set(); // key = t|kind|msg
 
-      const start = Math.max(0, n - MAX_POINTS);
-      const labels = t.slice(start, n).map(v => `${Math.round(Number(v)||0)}m`);
-      const p = pkw.slice(start, n).map(Number);
-      const o = oi.slice(start, n).map(Number);
+    function updateLogTickerAppendOnly(tape){
+      const el = document.getElementById("logTicker");
 
-      chartPowerOcc.data.labels = labels;
-      chartPowerOcc.data.datasets[0].data = p;
-      chartPowerOcc.data.datasets[1].data = o;
-      chartPowerOcc.update("none");
+      const wasNearBottom = (el.scrollHeight - el.scrollTop - el.clientHeight) < 60;
 
-      const arrivalsPerMin = Number(now.arrivalsPerMin) || 0;
-      const energyKWh = Number(now.energyKWh) || 0;
-      const targetKWh = Math.max(1, Number(now.targetKWh) || 1);
-      const energyPct = clamp((energyKWh/targetKWh)*100, 0, 100);
-      const corr = Number(now.corr) || 0;
+      // backend tape may be newest-first; localTape is in order.
+      // We'll normalize by iterating in natural order: sort by insertion perception (we can only do stable by "t" string, but keep simple)
+      // We will append in the order we receive from mergeTape; localTape is appended each step.
+      const list = safeArr(tape);
 
-      const mom = momentum(aux.arrivals);
-      const heat = (corr*1.2) + (mom*0.35) + (arrivalsPerMin*0.10);
-      pushAux(labels[labels.length-1], arrivalsPerMin, energyPct, corr, heat);
+      let appended = 0;
+      for (const e of list){
+        if (!e || !e.msg) continue;
+        const t = e.t || "";
+        const kind = (e.kind || "").toLowerCase();
+        const msg = e.msg || "";
 
-      chartArrivals.data.labels = aux.labels;
-      chartArrivals.data.datasets[0].data = aux.arrivals;
-      chartArrivals.update("none");
+        const key = `${t}|${kind}|${msg}`;
+        if (seenLog.has(key)) continue;
+        seenLog.add(key);
 
-      chartEnergy.data.labels = aux.labels;
-      chartEnergy.data.datasets[0].data = aux.energyPct;
-      chartEnergy.update("none");
+        const row = document.createElement("div");
+        row.className = "logLine enter";
+        const cls = kind === "in" ? "in" : (kind === "out" ? "out" : "");
+        row.innerHTML = `<span class="lt">${t}</span><span class="lm ${cls}">${msg}</span>`;
+        el.appendChild(row);
 
-      chartFomo.data.labels = aux.labels;
-      chartFomo.data.datasets[0].data = aux.heat;
-      chartFomo.data.datasets[1].data = aux.corr;
-      chartFomo.update("none");
+        // enter animation
+        setTimeout(()=>row.classList.remove("enter"), 30);
+
+        appended++;
+      }
+
+      // cap DOM lines
+      while (el.children.length > 80){
+        el.removeChild(el.firstChild);
+      }
+
+      // autoscroll if user is near bottom (CLI behavior)
+      if ((wasNearBottom && appended > 0) || el.children.length <= 1){
+        el.scrollTop = el.scrollHeight;
+      }
     }
 
-    function updateRevenue(rev){
-      rev = rev || {};
-      const last60 = Number(rev.last60sUSD)||0;
-      const last60Prot = Number(rev.last60sProtocolUSD)||0;
-      const lifetime = Number(rev.lifetimeUSD)||0;
-      const lifetimeProt = Number(rev.lifetimeProtocolUSD)||0;
+    // ---------------------------
+    // REVENUE + YIELD (addictive)
+    // ---------------------------
+    function updateEconomics(now, revenue){
+      const totalKW = n(now.totalKW);
+      const corr = n(now.corr);
+      const arrivals = n(now.arrivalsPerMin);
 
-      document.getElementById("revLast60").textContent = formatNumber(last60,4);
-      document.getElementById("revLast60Protocol").textContent = formatNumber(last60Prot,4);
-      document.getElementById("revLast60ProtocolChip").textContent = formatNumber(last60Prot,4);
-      document.getElementById("revLast60Hosts").textContent = formatNumber(last60-last60Prot,4);
+      // if backend provides revenue object, use it
+      const last60 = n(revenue.last60sUSD);
+      const last60Prot = n(revenue.last60sProtocolUSD);
+      const lifetime = n(revenue.lifetimeUSD);
+      const lifetimeProt = n(revenue.lifetimeProtocolUSD);
 
-      document.getElementById("revLifetime").textContent = formatNumber(lifetime,2);
-      document.getElementById("revLifetimeProtocol").textContent = formatNumber(lifetimeProt,2);
+      document.getElementById("revLast60").textContent = fmt(last60, 4);
+      document.getElementById("revLast60Prot").textContent = fmt(last60Prot, 4);
+      document.getElementById("revLast60Hosts").textContent = fmt(last60 - last60Prot, 4);
 
-      document.getElementById("revDailyAtRate").textContent = formatNumber(last60*60*24,2);
+      document.getElementById("revLifetime").textContent = fmt(lifetime, 2);
+      document.getElementById("revLifetimeProt").textContent = fmt(lifetimeProt, 2);
+
+      // Estimated yield per minute from last60 rate (last60 is per minute already since 60s window)
+      const yieldPerMin = last60;
+      document.getElementById("yieldNow").textContent = fmt(yieldPerMin, 4);
+      document.getElementById("yieldRateNow").textContent = "$" + fmt(yieldPerMin, 4);
+
+      const dailyEst = yieldPerMin * 60 * 24;
+      document.getElementById("revDailyEst").textContent = fmt(dailyEst, 2);
+
+      // Utilisation signal + narrative
+      const util = document.getElementById("utilSignal");
+      const utilNarr = document.getElementById("utilNarr");
+      const arrivalSignal = document.getElementById("arrivalSignal");
+      const arrivalNarr = document.getElementById("arrivalNarr");
+      const fomoLine = document.getElementById("fomoLine");
+
+      if (corr > 0.7){
+        util.textContent = "Tightly Coupled";
+        util.className = "accentGreen";
+        utilNarr.textContent = "Occupancy and power move together. LPs get paid when the network heats up.";
+      } else if (corr > 0.3){
+        util.textContent = "Warming Up";
+        util.className = "accentBlue";
+        utilNarr.textContent = "Demand is forming. A small uptick in arrivals can create a breakout.";
+      } else if (corr < -0.2){
+        util.textContent = "Inverted";
+        util.className = "accentAmber";
+        utilNarr.textContent = "Edge-case regime. Either the sim is weird or vehicles are tapering hard.";
+      } else {
+        util.textContent = "Noisy";
+        util.className = "accentAmber";
+        utilNarr.textContent = "Early day or low flow. Watch for the next wave.";
+      }
+
+      if (arrivals > 3.0){
+        arrivalSignal.textContent = "High Throughput";
+        arrivalSignal.className = "accentGreen";
+        arrivalNarr.textContent = "Rapid plug churn. Margins compound faster when the tape is hot.";
+      } else if (arrivals > 1.5){
+        arrivalSignal.textContent = "Active Flow";
+        arrivalSignal.className = "accentBlue";
+        arrivalNarr.textContent = "Network is alive. Correlation tightens when peaks stack.";
+      } else {
+        arrivalSignal.textContent = "Warm-up";
+        arrivalSignal.className = "accentPurple";
+        arrivalNarr.textContent = "Quiet hours. The next surge is where the FOMO starts.";
+      }
+
+      // FOMO text
+      const pressure = clamp01(arrivals / 4.0);
+      const utilProxy = clamp01((corr + 1) / 2.0);
+      const loadProxy = clamp01(totalKW / 1200.0);
+      const pulse = clamp01(0.45*pressure + 0.35*utilProxy + 0.20*loadProxy);
+
+      if (pulse > 0.72 && pressure > 0.65){
+        fomoLine.textContent = "Breakout forming. Arrivals are stacking and yield is accelerating. Don’t blink.";
+      } else if (pulse > 0.52){
+        fomoLine.textContent = "Momentum building. A small spike in arrivals can flip the pool into a hotter regime.";
+      } else {
+        fomoLine.textContent = "The pool is quiet. The next breakout is when arrivals spike and correlation tightens.";
+      }
+
+      // Yield narrative tag
+      const yieldNarr = document.getElementById("yieldNarr");
+      const yieldTag = document.getElementById("yieldTag");
+      if (pulse > 0.72){
+        yieldNarr.textContent = "Breakout. Yield is accelerating in real time.";
+        yieldTag.textContent = "breakout";
+      } else if (pulse > 0.52){
+        yieldNarr.textContent = "Momentum. Yield rate rising with flow.";
+        yieldTag.textContent = "rising";
+      } else {
+        yieldNarr.textContent = "Steady. Waiting for higher throughput.";
+        yieldTag.textContent = "steady";
+      }
+
+      // Update yield chart stream
+      if (!window._yL) window._yL = [];
+      if (!window._yD) window._yD = [];
+      window._yL.push(now.simTime || "");
+      window._yD.push(pulse);
+      if (window._yL.length > 120){
+        window._yL.shift(); window._yD.shift();
+      }
+      chYield.data.labels = window._yL;
+      chYield.data.datasets[0].data = window._yD;
+      chYield.update("none");
     }
 
+    // ---------------------------
+    // META + CHART UPDATES
+    // ---------------------------
     function updateMeta(now, cfg){
       document.getElementById("modeLabel").textContent = cfg.mode || "office";
       document.getElementById("simTime").textContent = now.simTime || "00:00:00";
-      document.getElementById("arrivalsPerMin").textContent = formatNumber(now.arrivalsPerMin||0,2);
-      document.getElementById("corrValue").textContent = formatNumber(now.corr||0,2);
+      document.getElementById("arrivalsPerMin").textContent = fmt(now.arrivalsPerMin || 0, 2);
+      document.getElementById("corrValue").textContent = fmt(now.corr || 0, 2);
 
-      document.getElementById("totalKW").textContent = formatNumber(now.totalKW||0,1) + " kW";
-      const energyMWh = (Number(now.energyKWh)||0)/1000.0;
-      document.getElementById("energyKWh").textContent = formatNumber(energyMWh,3) + " MWh";
-      document.getElementById("targetKWh").textContent = formatNumber(now.targetKWh||0,0);
-      document.getElementById("activeVehicles").textContent = now.activeVehicles || 0;
+      document.getElementById("totalKW").textContent = fmt(now.totalKW || 0, 1);
 
-      const corr = Number(now.corr)||0;
-      const a = Number(now.arrivalsPerMin)||0;
-      const heat = (corr*1.2) + (momentum(aux.arrivals)*0.35) + (a*0.10);
+      const energyKWh = n(now.energyKWh);
+      document.getElementById("energyMWh").textContent = fmt(energyKWh / 1000.0, 3);
+      document.getElementById("targetKWh").textContent = fmt(now.targetKWh || 0, 0);
 
-      const fomo = document.getElementById("fomoSignal");
-      const fsub = document.getElementById("fomoSub");
-      if (heat > 2.2){ fomo.textContent="Hot Zone"; fomo.style.color="var(--danger)"; fsub.textContent="High-yield wave forming. Watch the curve."; }
-      else if (heat > 1.2){ fomo.textContent="Spiking"; fomo.style.color="var(--primary)"; fsub.textContent="Arrivals accelerating. Utilization is clustering."; }
-      else { fomo.textContent="Charging Up"; fomo.style.color="var(--accent)"; fsub.textContent="Regime building. Waiting for breakout."; }
+      document.getElementById("activeVehicles").textContent = String(now.activeVehicles || 0);
     }
 
+    function updateCharts(series){
+      const t = safeArr(series.t);
+      const pkw = safeArr(series.pkw);
+      const oi = safeArr(series.oi);
+
+      const labels = t.map(v => (n(v).toFixed(0) + "m"));
+
+      chPower.data.labels = labels;
+      chPower.data.datasets[0].data = pkw;
+      chPower.update("none");
+
+      chOcc.data.labels = labels;
+      chOcc.data.datasets[0].data = oi;
+      chOcc.update("none");
+    }
+
+    function updateMix(top){
+      top = safeArr(top);
+      let cars=0,w3=0,w2=0;
+      top.forEach(s=>{
+        const vt = String(s.vtype||"").toLowerCase();
+        if (vt==="car") cars++;
+        else if (vt==="3w") w3++;
+        else w2++;
+      });
+      chMix.data.datasets[0].data = [cars,w3,w2];
+      chMix.update("none");
+    }
+
+    // ---------------------------
+    // FETCH LOOP
+    // ---------------------------
     async function fetchState(){
       try{
-        const res = await fetch(`${API_BASE}/api/state`, { cache:"no-store" });
-        if(!res.ok) throw new Error(`API ${res.status}`);
+        const res = await fetch(`${API_BASE}/api/state`, { cache: "no-store" });
+        if (!res.ok) throw new Error(`API ${res.status}`);
+
         const data = await res.json();
         if (!data || !data.series || !data.series.t) return;
 
         const now = data.now || {};
         const cfg = data.config || {};
+        const series = data.series || {};
+        const top = data.top || [];
+        const backendTape = data.tape || [];
+        const revenue = data.revenue || {};
+
         updateMeta(now, cfg);
-        updateCharts(data.series || {}, now);
-        updateRevenue(data.revenue || {});
-      } catch(e){
-        console.error("fetchState failed", e);
+        updateCharts(series);
+        updateMix(top);
+
+        // diff events even if backend tape is empty
+        buildDiffEvents(safeArr(top), now.simTime || "");
+        const mergedTape = mergeTape(backendTape, now.simTime || "");
+
+        // append-only CLI log (no re-render)
+        updateLogTickerAppendOnly(mergedTape);
+
+        updateVehicles(top, now);       // multi-line grid
+        updateEconomics(now, revenue);  // revenue + yield
+
+      } catch(err){
+        console.error("fetchState failed", err);
       }
     }
 

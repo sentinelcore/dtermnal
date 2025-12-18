@@ -314,7 +314,7 @@ class Engine:
                 "lifetimeUSD": self.lifetimeRevenueUSD,
                 "lifetimeProtocolUSD": lifetime_protocol,
                 "last60sUSD": last60s_rev,
-                "last60sProtocolUSD": last60s_protocol,
+                "last60sProtocolUSD": last60m_protocol,
                 "last60mUSD": last60m_usd,
                 "last60mProtocolUSD": last60m_protocol,
             },

@@ -284,14 +284,13 @@ class Engine:
             self.sessions.append(s)
             self._push_tape("in", f"+ Plugged: #{s.id} {s.vtype.upper()} @ {s.peakKW:.0f}kW")
 
-        totalKW = sum(self._power_at(s, self.simMin) for s in self.sessions)
-        # kW * hours = kWh; mult / 60 is hours
-        delta_kwh = totalKW * (mult / 60.0)
-        self.energyKWh += delta_kwh
-
-        # revenue = margin * energy
-        delta_revenue = delta_kwh * MARGIN_PER_KWH
-        self.lifetimeRevenueUSD += delta_revenue
+            totalKW = sum(self._power_at(s, self.simMin) for s in self.sessions)
+            # kW * hours = kWh; mult / 60 is hours
+            delta_kwh = totalKW * (mult / 60.0)
+            self.energyKWh += delta_kwh
+            # revenue = margin * energy
+            delta_revenue = delta_kwh * MARGIN_PER_KWH
+            self.lifetimeRevenueUSD += delta_revenue
 
 
         kept: List[Session] = []

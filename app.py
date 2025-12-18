@@ -14,7 +14,6 @@ from fastapi.middleware.cors import CORSMiddleware
 from pydantic import BaseModel
 import redis
 
-
 # =====================================================
 # Constants
 # =====================================================
@@ -254,7 +253,7 @@ class Engine:
         )
 
         # revenue
-        last60s_rev = totalKW * MARGIN_PER_KWH 
+        last60s_rev = totalKW * MARGIN_PER_KWH / 60.0
         lifetime_protocol = self.lifetimeRevenueUSD * PROTOCOL_FEE_SHARE
 
         # top consumers

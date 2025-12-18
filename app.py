@@ -318,7 +318,7 @@ class Engine:
             self.series_pkw.pop(0)
             self.series_oi.pop(0)
 
-        def snapshot(self) -> Dict[str, Any]:
+    def snapshot(self) -> Dict[str, Any]:
         totalKW = sum(self._power_at(s, self.simMin) for s in self.sessions)
         ...
         targetKWh = max(0.1, self.cfg.targetMWh) * 1000.0

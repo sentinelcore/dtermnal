@@ -13,6 +13,8 @@ from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 from pydantic import BaseModel
 import redis
+from collections import deque
+
 
 # =====================================================
 # Constants
@@ -130,6 +132,8 @@ class Engine:
         self.arrivalScale = 1.0
         self.arrivalNudge = 1.0
         self._recompute_arrival_scale()
+        self.revenue_buffer = deque()
+
 
     # -------------------------
 
@@ -212,6 +216,15 @@ class Engine:
         self.energyKWh += delta_kwh
         self.lifetimeRevenueUSD += delta_kwh * MARGIN_PER_KWH
 
+        now_sec = int(self.simSec)
+
+        self.revenue_buffer.append((now_sec, delta_revenue))
+
+        # keep only last 60 minutes (3600 seconds)
+        while self.revenue_buffer and self.revenue_buffer[0][0] < now_sec - 3600:
+            self.revenue_buffer.popleft()
+
+
         self.sessions = [
             s for s in self.sessions
             if (self.simMin - s.startMin) < s.durMin
@@ -255,6 +268,9 @@ class Engine:
         # revenue
         last60s_rev = totalKW * MARGIN_PER_KWH 
         lifetime_protocol = self.lifetimeRevenueUSD * PROTOCOL_FEE_SHARE
+        last60m_usd = sum(v for _, v in self.revenue_buffer)
+        last60m_protocol = last60m_usd * PROTOCOL_FEE_SHARE
+
 
         # top consumers
         top = sorted(
@@ -295,10 +311,12 @@ class Engine:
             "top": top,
             "tape": self.tape,
             "revenue": {
-                "last60sUSD": last60s_rev,
-                "last60sProtocolUSD": last60s_rev * PROTOCOL_FEE_SHARE,
                 "lifetimeUSD": self.lifetimeRevenueUSD,
                 "lifetimeProtocolUSD": lifetime_protocol,
+                "last60sUSD": last60s_rev,
+                "last60sProtocolUSD": last60s_protocol,
+                "last60mUSD": last60m_usd,
+                "last60mProtocolUSD": last60m_protocol,
             },
         }
 

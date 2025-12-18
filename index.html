@@ -5,12 +5,10 @@
   <title>DeCharge DeGen Energy Terminal – Mark1</title>
   <meta name="viewport" content="width=device-width, initial-scale=1" />
 
-  <!-- Chart.js -->
   <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
 
   <style>
     :root{
-      /* DeCharge-ish neon / glass */
       --bg0:#020617;
       --bg1:#050b1d;
       --glass: rgba(12, 18, 40, 0.55);
@@ -21,7 +19,7 @@
       --text:#e5e7eb;
       --muted: rgba(229,231,235,0.68);
 
-      --blue:#19b7ff;      /* neon cyan-blue */
+      --blue:#19b7ff;
       --blue2:#0ea5e9;
       --green:#22c55e;
       --purple:#a855f7;
@@ -54,11 +52,7 @@
       overflow-x: hidden;
     }
 
-    .shell{
-      max-width: 1440px;
-      margin: 0 auto;
-      padding: 18px 18px 28px;
-    }
+    .shell{ max-width: 1440px; margin: 0 auto; padding: 18px 18px 28px; }
 
     header{
       display:flex;
@@ -69,11 +63,7 @@
       margin-bottom: 14px;
     }
 
-    .brand{
-      display:flex;
-      flex-direction: column;
-      gap: 6px;
-    }
+    .brand{ display:flex; flex-direction: column; gap: 6px; }
 
     .brandTitle{
       display:flex;
@@ -130,31 +120,19 @@
       font-size: .78rem;
     }
 
-    .k{
-      color: rgba(229,231,235,0.62);
-      text-transform: uppercase;
-      letter-spacing: .14em;
-      font-size: .7rem;
-    }
-
-    .v{
-      font-weight: 700;
-      color: rgba(229,231,235,0.92);
-    }
+    .k{ color: rgba(229,231,235,0.62); text-transform: uppercase; letter-spacing: .14em; font-size: .7rem; }
+    .v{ font-weight: 700; color: rgba(229,231,235,0.92); }
 
     .badge.mode{
       border-color: rgba(25,183,255,0.45);
       box-shadow: var(--glow-blue);
     }
 
-    /* Glass card */
     .card{
       background: linear-gradient(180deg, var(--glass), rgba(12,18,40,0.45));
       border: 1px solid var(--border);
       border-radius: var(--r);
-      box-shadow:
-        0 18px 60px rgba(0,0,0,0.45),
-        0 0 0 1px rgba(2,6,23,0.35);
+      box-shadow: 0 18px 60px rgba(0,0,0,0.45), 0 0 0 1px rgba(2,6,23,0.35);
       backdrop-filter: blur(18px);
       -webkit-backdrop-filter: blur(18px);
       position: relative;
@@ -172,11 +150,7 @@
       opacity: .9;
     }
 
-    .cardInner{
-      position: relative;
-      z-index: 1;
-      padding: 14px 14px 16px;
-    }
+    .cardInner{ position: relative; z-index: 1; padding: 14px 14px 16px; }
 
     .cardHead{
       display:flex;
@@ -186,35 +160,18 @@
       margin-bottom: 10px;
     }
 
-    .title{
-      color: rgba(229,231,235,0.68);
-      text-transform: uppercase;
-      letter-spacing: .16em;
-      font-size: .8rem;
-    }
+    .title{ color: rgba(229,231,235,0.68); text-transform: uppercase; letter-spacing: .16em; font-size: .8rem; }
 
-    .grid{
-      display:grid;
-      grid-template-columns: 2.15fr 1.1fr;
-      gap: 14px;
-      margin-top: 12px;
-    }
+    .grid{ display:grid; grid-template-columns: 2.15fr 1.1fr; gap: 14px; margin-top: 12px; }
+    @media (max-width: 1050px){ .grid{ grid-template-columns: 1fr; } }
 
-    @media (max-width: 1050px){
-      .grid{ grid-template-columns: 1fr; }
-    }
-
-    /* Metrics */
     .metrics{
       display:grid;
       grid-template-columns: repeat(4, minmax(0,1fr));
       gap: 10px;
       margin-bottom: 12px;
     }
-
-    @media (max-width: 820px){
-      .metrics{ grid-template-columns: repeat(2, minmax(0,1fr)); }
-    }
+    @media (max-width: 820px){ .metrics{ grid-template-columns: repeat(2, minmax(0,1fr)); } }
 
     .metric{
       border-radius: var(--r2);
@@ -223,49 +180,18 @@
       padding: 10px 10px 9px;
     }
 
-    .ml{
-      color: rgba(229,231,235,0.62);
-      text-transform: uppercase;
-      letter-spacing: .18em;
-      font-size: .68rem;
-      margin-bottom: 6px;
-    }
-
-    .mv{
-      font-weight: 800;
-      font-size: 1.08rem;
-      display:flex;
-      gap: 8px;
-      align-items: baseline;
-    }
-
-    .mv .unit{
-      font-weight: 700;
-      font-size: .78rem;
-      color: rgba(229,231,235,0.62);
-    }
-
-    .ms{
-      margin-top: 4px;
-      color: rgba(229,231,235,0.58);
-      font-size: .74rem;
-    }
+    .ml{ color: rgba(229,231,235,0.62); text-transform: uppercase; letter-spacing: .18em; font-size: .68rem; margin-bottom: 6px; }
+    .mv{ font-weight: 800; font-size: 1.08rem; display:flex; gap: 8px; align-items: baseline; }
+    .mv .unit{ font-weight: 700; font-size: .78rem; color: rgba(229,231,235,0.62); }
+    .ms{ margin-top: 4px; color: rgba(229,231,235,0.58); font-size: .74rem; }
 
     .accentBlue{ color: var(--blue); text-shadow: 0 0 18px rgba(25,183,255,0.22); }
     .accentGreen{ color: var(--green); text-shadow: 0 0 18px rgba(34,197,94,0.22); }
     .accentPurple{ color: var(--purple); text-shadow: 0 0 18px rgba(168,85,247,0.22); }
     .accentAmber{ color: var(--amber); text-shadow: 0 0 18px rgba(251,191,36,0.18); }
 
-    /* Charts area */
-    .charts4{
-      display:grid;
-      grid-template-columns: repeat(2, minmax(0,1fr));
-      gap: 10px;
-    }
-
-    @media (max-width: 900px){
-      .charts4{ grid-template-columns: 1fr; }
-    }
+    .charts4{ display:grid; grid-template-columns: repeat(2, minmax(0,1fr)); gap: 10px; }
+    @media (max-width: 900px){ .charts4{ grid-template-columns: 1fr; } }
 
     .chartCard{
       border-radius: var(--r2);
@@ -312,20 +238,10 @@
       white-space: nowrap;
     }
 
-    .canvasWrap{
-      position: relative;
-      z-index: 1;
-      height: 180px;
-    }
-
+    .canvasWrap{ position: relative; z-index: 1; height: 180px; }
     canvas{ display:block; width:100%; height:100%; }
 
-    /* Right revenue panel */
-    .revStack{
-      display:flex;
-      flex-direction: column;
-      gap: 10px;
-    }
+    .revStack{ display:flex; flex-direction: column; gap: 10px; }
 
     .revHero{
       border-radius: var(--r2);
@@ -335,13 +251,7 @@
       box-shadow: var(--glow-blue);
     }
 
-    .revHeroTop{
-      display:flex;
-      justify-content: space-between;
-      align-items: baseline;
-      gap: 10px;
-      margin-bottom: 8px;
-    }
+    .revHeroTop{ display:flex; justify-content: space-between; align-items: baseline; gap: 10px; margin-bottom: 8px; }
 
     .revBig{
       font-size: 2.0rem;
@@ -350,12 +260,7 @@
       text-shadow: 0 0 18px rgba(25,183,255,0.22);
     }
 
-    .revSmall{
-      color: rgba(229,231,235,0.66);
-      font-size: .78rem;
-      text-transform: uppercase;
-      letter-spacing: .16em;
-    }
+    .revSmall{ color: rgba(229,231,235,0.66); font-size: .78rem; text-transform: uppercase; letter-spacing: .16em; }
 
     .revRow{
       display:flex;
@@ -370,23 +275,11 @@
       color: rgba(229,231,235,0.78);
     }
 
-    .revRow b{
-      color: rgba(229,231,235,0.92);
-      font-weight: 800;
-    }
+    .revRow b{ color: rgba(229,231,235,0.92); font-weight: 800; }
 
-    .revHint{
-      color: rgba(229,231,235,0.60);
-      font-size: .76rem;
-      line-height: 1.3;
-      margin-top: 8px;
-    }
+    .revHint{ color: rgba(229,231,235,0.60); font-size: .76rem; line-height: 1.3; margin-top: 8px; }
 
-    .ctaRow{
-      display:flex;
-      gap: 10px;
-      margin-top: 10px;
-    }
+    .ctaRow{ display:flex; gap: 10px; margin-top: 10px; }
 
     .btn{
       appearance: none;
@@ -430,15 +323,8 @@
       box-shadow: var(--glow-blue);
     }
 
-    .revMiniGrid{
-      display:grid;
-      grid-template-columns: repeat(2, minmax(0,1fr));
-      gap: 10px;
-    }
-
-    @media (max-width: 1050px){
-      .revMiniGrid{ grid-template-columns: 1fr; }
-    }
+    .revMiniGrid{ display:grid; grid-template-columns: repeat(2, minmax(0,1fr)); gap: 10px; }
+    @media (max-width: 1050px){ .revMiniGrid{ grid-template-columns: 1fr; } }
 
     .revMini{
       border-radius: var(--r2);
@@ -450,7 +336,6 @@
     .revMini .ml{ margin-bottom: 6px; }
     .revMini .mv{ font-size: 1.15rem; }
 
-    /* Terminal log style ticker */
     .terminal{
       border-radius: var(--r2);
       border: 1px solid rgba(34,197,94,0.18);
@@ -459,13 +344,7 @@
       box-shadow: 0 0 28px rgba(34,197,94,0.10);
     }
 
-    .terminalHead{
-      display:flex;
-      justify-content: space-between;
-      align-items: center;
-      gap: 10px;
-      margin-bottom: 8px;
-    }
+    .terminalHead{ display:flex; justify-content: space-between; align-items: center; gap: 10px; margin-bottom: 8px; }
 
     .termTitle{
       font-family: var(--mono);
@@ -475,21 +354,13 @@
       color: rgba(229,231,235,0.62);
     }
 
-    .termDotRow{
-      display:flex;
-      gap: 6px;
-      align-items: center;
-    }
+    .termDotRow{ display:flex; gap: 6px; align-items: center; }
 
-    .td{
-      width: 8px; height: 8px; border-radius: 999px;
-      opacity: .9;
-    }
+    .td{ width: 8px; height: 8px; border-radius: 999px; opacity: .9; }
     .td.g{ background: var(--green); box-shadow: 0 0 12px rgba(34,197,94,0.5); }
     .td.b{ background: var(--blue); box-shadow: 0 0 12px rgba(25,183,255,0.45); }
     .td.p{ background: var(--purple); box-shadow: 0 0 12px rgba(168,85,247,0.45); }
 
-    /* CLI-style append-only log */
     .log{
       font-family: var(--mono);
       font-size: .78rem;
@@ -513,38 +384,16 @@
     }
     .logLine:last-child{ border-bottom: none; }
 
-    .logLine.enter{
-      opacity: 0;
-      transform: translateY(8px);
-    }
+    .logLine.enter{ opacity: 0; transform: translateY(8px); }
 
-    .lt{
-      width: 86px;
-      color: rgba(229,231,235,0.52);
-      flex: 0 0 auto;
-    }
-
-    .lm{
-      flex: 1;
-      white-space: nowrap;
-      overflow: hidden;
-      text-overflow: ellipsis;
-    }
+    .lt{ width: 86px; color: rgba(229,231,235,0.52); flex: 0 0 auto; }
+    .lm{ flex: 1; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
 
     .in{ color: rgba(34,197,94,0.92); }
     .out{ color: rgba(251,113,133,0.92); }
 
-    /* Vehicles wall with multi-line flow */
-    .vehiclesWrap{
-      display:grid;
-      grid-template-columns: 1.6fr 1.1fr;
-      gap: 10px;
-      margin-top: 10px;
-    }
-
-    @media (max-width: 1050px){
-      .vehiclesWrap{ grid-template-columns: 1fr; }
-    }
+    .vehiclesWrap{ display:grid; grid-template-columns: 1.6fr 1.1fr; gap: 10px; margin-top: 10px; }
+    @media (max-width: 1050px){ .vehiclesWrap{ grid-template-columns: 1fr; } }
 
     .vehicleWall{
       border-radius: var(--r2);
@@ -562,27 +411,12 @@
       margin-bottom: 8px;
     }
 
-    .legend{
-      display:flex;
-      gap: 14px;
-      align-items: center;
-      color: rgba(229,231,235,0.62);
-      font-size: .78rem;
-    }
-
+    .legend{ display:flex; gap: 14px; align-items: center; color: rgba(229,231,235,0.62); font-size: .78rem; }
     .legend b{ color: rgba(229,231,235,0.92); font-weight: 900; }
 
-    .counts{
-      display:flex;
-      gap: 10px;
-      align-items: center;
-      color: rgba(229,231,235,0.62);
-      font-size: .78rem;
-    }
+    .counts{ display:flex; gap: 10px; align-items: center; color: rgba(229,231,235,0.62); font-size: .78rem; }
 
-    .dot2{
-      width: 8px; height: 8px; border-radius: 999px; display:inline-block;
-    }
+    .dot2{ width: 8px; height: 8px; border-radius: 999px; display:inline-block; }
     .dc{ background: var(--blue2); box-shadow: 0 0 12px rgba(14,165,233,0.35); }
     .d3{ background: var(--green); box-shadow: 0 0 12px rgba(34,197,94,0.35); }
     .d2{ background: var(--purple); box-shadow: 0 0 12px rgba(168,85,247,0.35); }
@@ -623,14 +457,7 @@
     .vc.enter{ opacity: 0; transform: translateY(10px); }
     .vc.exit{ opacity: 0; transform: translateY(-10px); }
 
-    .vcTop{
-      display:flex;
-      justify-content: space-between;
-      align-items: center;
-      gap: 10px;
-      position: relative;
-      z-index: 1;
-    }
+    .vcTop{ display:flex; justify-content: space-between; align-items: center; gap: 10px; position: relative; z-index: 1; }
 
     .vcId{
       font-family: var(--mono);
@@ -640,11 +467,7 @@
       text-transform: uppercase;
     }
 
-    .vcType{
-      font-weight: 900;
-      font-size: .85rem;
-      letter-spacing: .02em;
-    }
+    .vcType{ font-weight: 900; font-size: .85rem; letter-spacing: .02em; }
 
     .vcMid{
       display:flex;
@@ -663,12 +486,7 @@
       text-shadow: 0 0 16px rgba(34,197,94,0.16);
     }
 
-    .vcPow .u{
-      font-size: .72rem;
-      color: rgba(229,231,235,0.55);
-      margin-left: 4px;
-      font-weight: 800;
-    }
+    .vcPow .u{ font-size: .72rem; color: rgba(229,231,235,0.55); margin-left: 4px; font-weight: 800; }
 
     .vcFoot{
       margin-top: 6px;
@@ -724,7 +542,6 @@
       </div>
     </header>
 
-    <!-- Metrics -->
     <div class="card">
       <div class="cardInner">
         <div class="metrics">
@@ -734,9 +551,10 @@
             <div class="ms">Instantaneous charging power</div>
           </div>
 
+          <!-- CHANGE #1: show energy dispensed as kWh (not MWh) -->
           <div class="metric">
             <div class="ml">Energy Dispensed</div>
-            <div class="mv"><span id="energyMWh">0.000</span><span class="unit">MWh</span></div>
+            <div class="mv"><span id="energyKWh">0.0</span><span class="unit">kWh</span></div>
             <div class="ms">Target <span class="accentAmber" id="targetKWh">0</span> kWh</div>
           </div>
 
@@ -756,7 +574,6 @@
     </div>
 
     <div class="grid">
-      <!-- LEFT: charts + flow -->
       <div class="card">
         <div class="cardInner">
           <div class="cardHead">
@@ -799,9 +616,7 @@
           </div>
 
           <div class="vehiclesWrap">
-            <!-- left column -->
             <div>
-              <!-- Terminal log style ticker (kept) -->
               <div class="terminal">
                 <div class="terminalHead">
                   <div class="termTitle">Live Network Log</div>
@@ -814,7 +629,6 @@
 
               <div style="height:10px"></div>
 
-              <!-- Vehicles wall -->
               <div class="vehicleWall">
                 <div class="wallHead">
                   <div class="title" style="margin:0;">Vehicle Flow · Top Active Sessions</div>
@@ -834,9 +648,7 @@
               </div>
             </div>
 
-            <!-- right column (kept, but no duplicate logs) -->
             <div class="tape" style="display:none;">
-              <!-- Intentionally hidden to avoid duplicate log stream -->
               <div class="tapeHead">
                 <div class="tapeTitle">Event Tape</div>
                 <div class="tapeHint">Most recent plug / unplug</div>
@@ -847,7 +659,6 @@
         </div>
       </div>
 
-      <!-- RIGHT: revenue becomes addictive -->
       <div class="card">
         <div class="cardInner">
           <div class="cardHead">
@@ -859,20 +670,21 @@
             <div class="revHero">
               <div class="revHeroTop">
                 <div>
-                  <div class="revSmall">Revenue last 60s</div>
-                  <div class="revBig">$<span id="revLast60">0.0000</span></div>
+                  <!-- CHANGE #2: last 60 mins (not 60s) -->
+                  <div class="revSmall">Revenue last 60m</div>
+                  <div class="revBig">$<span id="revLast60m">0.0000</span></div>
                 </div>
                 <div style="text-align:right;">
                   <div class="revSmall">Protocol fees</div>
                   <div style="font-weight:900;font-size:1.2rem;color:rgba(34,197,94,0.92);text-shadow:0 0 16px rgba(34,197,94,0.18);">
-                    $<span id="revLast60Prot">0.0000</span>
+                    $<span id="revLast60mProt">0.0000</span>
                   </div>
                 </div>
               </div>
 
               <div class="revRow">
                 <span>To Hosts + LPs</span>
-                <b>$<span id="revLast60Hosts">0.0000</span></b>
+                <b>$<span id="revLast60mHosts">0.0000</span></b>
               </div>
               <div class="revRow">
                 <span>Current Yield Rate (est)</span>
@@ -888,7 +700,6 @@
               </div>
 
               <div class="ctaRow">
-                <!-- CHANGE THIS LINK -->
                 <a class="btn" id="investBtn" href="https://decharge.network/network/" target="_blank" rel="noreferrer">
                   ⚡ Invest in Pool
                 </a>
@@ -936,20 +747,13 @@
   </div>
 
   <script>
-    // ---------------------------
-    // CONFIG
-    // ---------------------------
-    const API_BASE = "https://dtermnal.onrender.com"; // no trailing slash
+    const API_BASE = "https://dtermnal.onrender.com";
 
-    // ---------------------------
-    // UTIL
-    // ---------------------------
     function safeArr(a){ return Array.isArray(a) ? a : []; }
     function n(x){ x = Number(x); return isNaN(x) ? 0 : x; }
     function fmt(x, d=2){ return n(x).toFixed(d); }
     function clamp01(x){ x = n(x); return Math.max(0, Math.min(1, x)); }
 
-    // watts/kW formatter (used for realistic session cards + log)
     function fmtPowerW(kW){
       const w = Math.max(0, n(kW) * 1000);
       if (w >= 1000) return { text: (w/1000).toFixed(1), unit: "kW" };
@@ -969,9 +773,6 @@
       return "w2";
     }
 
-    // ---------------------------
-    // CHARTS (neon lines)
-    // ---------------------------
     let chPower, chOcc, chMix, chYield;
 
     function mkLine(ctx, label, stroke, fill){
@@ -1043,51 +844,27 @@
           animation: false,
           plugins: { legend: { display: false } },
           scales: {
-            x: {
-              ticks: { color: "rgba(229,231,235,0.55)" },
-              grid: { color: "rgba(148,163,184,0.08)" }
-            },
-            y: {
-              ticks: { color: "rgba(229,231,235,0.55)" },
-              grid: { color: "rgba(148,163,184,0.10)" }
-            }
+            x: { ticks: { color: "rgba(229,231,235,0.55)" }, grid: { color: "rgba(148,163,184,0.08)" } },
+            y: { ticks: { color: "rgba(229,231,235,0.55)" }, grid: { color: "rgba(148,163,184,0.10)" } }
           }
         }
       });
     }
 
     function initCharts(){
-      chPower = mkLine(
-        document.getElementById("chPower").getContext("2d"),
-        "Power (kW)",
-        "rgba(25,183,255,0.95)",
-        "rgba(25,183,255,0.10)"
-      );
-      chOcc = mkLine(
-        document.getElementById("chOcc").getContext("2d"),
-        "Active Vehicles",
-        "rgba(34,197,94,0.95)",
-        "rgba(34,197,94,0.08)"
-      );
-      chMix = mkBar(document.getElementById("chMix").getContext("2d"));
-      chYield = mkLine(
-        document.getElementById("chYield").getContext("2d"),
-        "Yield (pulse)",
-        "rgba(168,85,247,0.95)",
-        "rgba(168,85,247,0.08)"
-      );
+      chPower = mkLine(document.getElementById("chPower").getContext("2d"), "Power (kW)", "rgba(25,183,255,0.95)", "rgba(25,183,255,0.10)");
+      chOcc   = mkLine(document.getElementById("chOcc").getContext("2d"), "Active Vehicles", "rgba(34,197,94,0.95)", "rgba(34,197,94,0.08)");
+      chMix   = mkBar(document.getElementById("chMix").getContext("2d"));
+      chYield = mkLine(document.getElementById("chYield").getContext("2d"), "Yield (pulse)", "rgba(168,85,247,0.95)", "rgba(168,85,247,0.08)");
     }
 
-    // ---------------------------
-    // VEHICLE WALL (multi-line, smooth enter/exit)
-    // ---------------------------
-    const vehicleEl = new Map();      // id -> element
-    let prevTopIds = new Set();       // diff events
+    const vehicleEl = new Map();
+    let prevTopIds = new Set();
     const localTape = [];
-    const MAX_TAPE = 80;              // CLI feel, but bounded
+    const MAX_TAPE = 80;
 
     function pushLocal(kind, t, msg){
-      localTape.push({kind, t, msg}); // append at end (CLI style)
+      localTape.push({kind, t, msg});
       if (localTape.length > MAX_TAPE) localTape.shift();
     }
 
@@ -1112,13 +889,7 @@
     }
 
     function mergeTape(backendTape, simTime){
-      // keep existing behavior: merge backend + local, but do NOT dedupe into a new array every render of UI.
-      // We'll treat this as an "event stream" and only append new unique lines to the CLI log.
-      const a = safeArr(backendTape).map(e => ({
-        kind: (e.kind || ""),
-        t: (e.t || simTime || ""),
-        msg: (e.msg || "")
-      }));
+      const a = safeArr(backendTape).map(e => ({ kind: (e.kind || ""), t: (e.t || simTime || ""), msg: (e.msg || "") }));
       const b = localTape.map(x => ({...x}));
       return [...a, ...b].filter(x => x && x.msg);
     }
@@ -1144,7 +915,6 @@
 
       const incoming = new Set(top.map(s => String(s.id)));
 
-      // create/update
       for (const s of top){
         const id = String(s.id);
         const vt = String(s.vtype||"").toLowerCase();
@@ -1173,7 +943,6 @@
             </div>
           `;
 
-          // If the empty placeholder exists, clear it once we have real cards
           if (grid.dataset.empty === "1"){
             grid.innerHTML = "";
             grid.dataset.empty = "0";
@@ -1200,7 +969,6 @@
         }
       }
 
-      // remove
       for (const [id, el] of vehicleEl.entries()){
         if (!incoming.has(id)){
           el.classList.add("exit");
@@ -1211,26 +979,18 @@
         }
       }
 
-      // empty state (do NOT fight with real cards)
       if (top.length === 0 && grid.childElementCount === 0){
         grid.dataset.empty = "1";
         grid.innerHTML = `<div style="color:rgba(229,231,235,0.55);font-size:.82rem;">No active sessions right now. Waiting for the next wave…</div>`;
       }
     }
 
-    // ---------------------------
-    // CLI LOG (append-only, no re-render)
-    // ---------------------------
-    const seenLog = new Set(); // key = t|kind|msg
+    const seenLog = new Set();
 
     function updateLogTickerAppendOnly(tape){
       const el = document.getElementById("logTicker");
-
       const wasNearBottom = (el.scrollHeight - el.scrollTop - el.clientHeight) < 60;
 
-      // backend tape may be newest-first; localTape is in order.
-      // We'll normalize by iterating in natural order: sort by insertion perception (we can only do stable by "t" string, but keep simple)
-      // We will append in the order we receive from mergeTape; localTape is appended each step.
       const list = safeArr(tape);
 
       let appended = 0;
@@ -1250,53 +1010,46 @@
         row.innerHTML = `<span class="lt">${t}</span><span class="lm ${cls}">${msg}</span>`;
         el.appendChild(row);
 
-        // enter animation
         setTimeout(()=>row.classList.remove("enter"), 30);
-
         appended++;
       }
 
-      // cap DOM lines
-      while (el.children.length > 80){
-        el.removeChild(el.firstChild);
-      }
+      while (el.children.length > 80) el.removeChild(el.firstChild);
 
-      // autoscroll if user is near bottom (CLI behavior)
       if ((wasNearBottom && appended > 0) || el.children.length <= 1){
         el.scrollTop = el.scrollHeight;
       }
     }
 
-    // ---------------------------
-    // REVENUE + YIELD (addictive)
-    // ---------------------------
     function updateEconomics(now, revenue){
       const totalKW = n(now.totalKW);
       const corr = n(now.corr);
       const arrivals = n(now.arrivalsPerMin);
 
-      // if backend provides revenue object, use it
-      const last60 = n(revenue.last60sUSD);
-      const last60Prot = n(revenue.last60sProtocolUSD);
+      // NEW: consume 60-minute window fields
+      const last60m = n(revenue.last60mUSD);
+      const last60mProt = n(revenue.last60mProtocolUSD);
+      const last60 = revenue.last60mUSD ?? revenue.last60sUSD ?? 0;
+      const last60Prot = revenue.last60mProtocolUSD ?? revenue.last60sProtocolUSD ?? 0;
+
       const lifetime = n(revenue.lifetimeUSD);
       const lifetimeProt = n(revenue.lifetimeProtocolUSD);
 
-      document.getElementById("revLast60").textContent = fmt(last60, 4);
-      document.getElementById("revLast60Prot").textContent = fmt(last60Prot, 4);
-      document.getElementById("revLast60Hosts").textContent = fmt(last60 - last60Prot, 4);
+      document.getElementById("revLast60m").textContent = fmt(last60m, 4);
+      document.getElementById("revLast60mProt").textContent = fmt(last60mProt, 4);
+      document.getElementById("revLast60mHosts").textContent = fmt(last60m - last60mProt, 4);
 
       document.getElementById("revLifetime").textContent = fmt(lifetime, 2);
       document.getElementById("revLifetimeProt").textContent = fmt(lifetimeProt, 2);
 
-      // Estimated yield per minute from last60 rate (last60 is per minute already since 60s window)
-      const yieldPerMin = last60;
+      // Yield rate per minute derived from 60-minute window
+      const yieldPerMin = last60m / 60.0;
       document.getElementById("yieldNow").textContent = fmt(yieldPerMin, 4);
       document.getElementById("yieldRateNow").textContent = "$" + fmt(yieldPerMin, 4);
 
       const dailyEst = yieldPerMin * 60 * 24;
       document.getElementById("revDailyEst").textContent = fmt(dailyEst, 2);
 
-      // Utilisation signal + narrative
       const util = document.getElementById("utilSignal");
       const utilNarr = document.getElementById("utilNarr");
       const arrivalSignal = document.getElementById("arrivalSignal");
@@ -1335,7 +1088,6 @@
         arrivalNarr.textContent = "Quiet hours. The next surge is where the FOMO starts.";
       }
 
-      // FOMO text
       const pressure = clamp01(arrivals / 4.0);
       const utilProxy = clamp01((corr + 1) / 2.0);
       const loadProxy = clamp01(totalKW / 1200.0);
@@ -1349,7 +1101,6 @@
         fomoLine.textContent = "The pool is quiet. The next breakout is when arrivals spike and correlation tightens.";
       }
 
-      // Yield narrative tag
       const yieldNarr = document.getElementById("yieldNarr");
       const yieldTag = document.getElementById("yieldTag");
       if (pulse > 0.72){
@@ -1363,7 +1114,6 @@
         yieldTag.textContent = "steady";
       }
 
-      // Update yield chart stream
       if (!window._yL) window._yL = [];
       if (!window._yD) window._yD = [];
       window._yL.push(now.simTime || "");
@@ -1376,9 +1126,6 @@
       chYield.update("none");
     }
 
-    // ---------------------------
-    // META + CHART UPDATES
-    // ---------------------------
     function updateMeta(now, cfg){
       document.getElementById("modeLabel").textContent = cfg.mode || "office";
       document.getElementById("simTime").textContent = now.simTime || "00:00:00";
@@ -1387,10 +1134,11 @@
 
       document.getElementById("totalKW").textContent = fmt(now.totalKW || 0, 1);
 
+      // CHANGE #1 wiring: show kWh directly
       const energyKWh = n(now.energyKWh);
-      document.getElementById("energyMWh").textContent = fmt(energyKWh / 1000.0, 3);
-      document.getElementById("targetKWh").textContent = fmt(now.targetKWh || 0, 0);
+      document.getElementById("energyKWh").textContent = fmt(energyKWh, 1);
 
+      document.getElementById("targetKWh").textContent = fmt(now.targetKWh || 0, 0);
       document.getElementById("activeVehicles").textContent = String(now.activeVehicles || 0);
     }
 
@@ -1398,7 +1146,6 @@
       const t = safeArr(series.t);
       const pkw = safeArr(series.pkw);
       const oi = safeArr(series.oi);
-
       const labels = t.map(v => (n(v).toFixed(0) + "m"));
 
       chPower.data.labels = labels;
@@ -1423,9 +1170,6 @@
       chMix.update("none");
     }
 
-    // ---------------------------
-    // FETCH LOOP
-    // ---------------------------
     async function fetchState(){
       try{
         const res = await fetch(`${API_BASE}/api/state`, { cache: "no-store" });
@@ -1445,15 +1189,12 @@
         updateCharts(series);
         updateMix(top);
 
-        // diff events even if backend tape is empty
         buildDiffEvents(safeArr(top), now.simTime || "");
         const mergedTape = mergeTape(backendTape, now.simTime || "");
 
-        // append-only CLI log (no re-render)
         updateLogTickerAppendOnly(mergedTape);
-
-        updateVehicles(top, now);       // multi-line grid
-        updateEconomics(now, revenue);  // revenue + yield
+        updateVehicles(top, now);
+        updateEconomics(now, revenue);
 
       } catch(err){
         console.error("fetchState failed", err);
